@@ -2,8 +2,19 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createWebHistory, createRouter } from 'vue-router'
 
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import '@mdi/font/css/materialdesignicons.css'
+
 import VmView from './views/VmView.vue'
 import App from './App.vue'
+
+const vuetify = createVuetify({
+  components,
+  directives,
+})
 
 const routes = [
   { path: '/', redirect: '/vms' },
@@ -15,4 +26,4 @@ const router = createRouter({
   routes,
 })
 
-createApp(App).use(createPinia()).use(router).mount('#app')
+createApp(App).use(createPinia()).use(router).use(vuetify).mount('#app')

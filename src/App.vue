@@ -1,8 +1,10 @@
 <template>
-  <div>
+  <v-app>
     <Header></Header>
-    <router-view></router-view>
-  </div>
+    <v-main>
+      <router-view></router-view>
+    </v-main>
+  </v-app>
 </template>
 
 <script setup lang="ts">
