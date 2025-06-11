@@ -1,15 +1,26 @@
 <template>
   <v-app>
-    <Header></Header>
+    <LayOutHeader />
     <v-main>
-      <router-view></router-view>
+      <router-view />
+      <NotificationList />
     </v-main>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import Header from './components/layout/LayOutHeader.vue'
+import { onMounted, onBeforeUnmount } from 'vue'
+import LayOutHeader from '@/components/layout/LayOutHeader.vue'
+import NotificationList from '@/components/notification/NotificationList.vue'
+import { useNotificationService } from '@/services/notificationService'
 
+const notificationService = useNotificationService('1')
+
+onMounted(() => {
+  notificationService.connect()
+})
+
+onBeforeUnmount(() => {
+  notificationService.disconnect()
+})
 </script>
-
-<style lang="scss" scoped></style>
