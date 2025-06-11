@@ -11,7 +11,6 @@ export interface NotificationDto {
 
 class NotificationService {
   private stompClient: Client | null = null
-  private notificationSubscription: Subscription | null = null
   private receivedNotifications = ref<NotificationDto[]>([])
 
   constructor(private readonly memberId: string) {}
@@ -25,23 +24,23 @@ class NotificationService {
         memberId: this.memberId,
       },
       (frame?: Frame) => {
-        if(!frame) return
+        if (!frame) return
 
-          const headers = frame.headers as Record<string, string>
-          console.log('STOMP Connected:', headers['user-name'] ?? 'User is anonymous')
+        const headers = frame.headers as Record<string, string>
+        console.log('STOMP Connected:', headers['user-name'] ?? 'User is anonymous')
 
-          this.notificationSubscription = this.stompClient!.subscribe(
-            '/user/queue/notifications',
-            (notification) => {
-              console.log('Received personal notification:', notification.body)
-              try {
-                const parsedNotification: NotificationDto = JSON.parse(notification.body)
-                this.receivedNotifications.value.push(parsedNotification)
-              } catch (e) {
-                console.error('Failed to parse notification JSON:', e)
-              }
+        this.stompClient!.subscribe(
+          '/user/queue/notifications',
+          (notification) => {
+            console.log('Received personal notification:', notification.body)
+            try {
+              const parsedNotification: NotificationDto = JSON.parse(notification.body)
+              this.receivedNotifications.value.push(parsedNotification)
+            } catch (e) {
+              console.error('Failed to parse notification JSON:', e)
             }
-          )
+          }
+        )
       },
       (error: string | Frame) => {
         console.error('STOMP Connection Error:', error)
@@ -54,7 +53,6 @@ class NotificationService {
       this.stompClient.disconnect(() => {
         console.log('STOMP Disconnected')
         this.stompClient = null
-        this.notificationSubscription = null
       })
     }
   }

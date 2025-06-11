@@ -24,7 +24,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useNotificationService } from '@/services/notificationService'
-import type { NotificationDto } from '@/services/notificationService'
 
 const notificationService = useNotificationService('1')
 const notifications = computed(() => notificationService.getNotifications().value)
