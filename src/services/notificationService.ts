@@ -1,13 +1,16 @@
 import { ref } from 'vue'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
-import type { Client, Subscription, Frame } from 'stompjs'
+import type { Client, Frame } from 'stompjs'
 
 export interface NotificationDto {
-  message: string
-  entityId: number
-  notificationType: string
+  prevVmState: string
+  currentState: string
+  type: string
+  vmId: number
 }
+
+let instance: NotificationService | null = null
 
 class NotificationService {
   private stompClient: Client | null = null
@@ -29,18 +32,17 @@ class NotificationService {
         const headers = frame.headers as Record<string, string>
         console.log('STOMP Connected:', headers['user-name'] ?? 'User is anonymous')
 
-        this.stompClient!.subscribe(
-          '/user/queue/notifications',
-          (notification) => {
-            console.log('Received personal notification:', notification.body)
-            try {
-              const parsedNotification: NotificationDto = JSON.parse(notification.body)
-              this.receivedNotifications.value.push(parsedNotification)
-            } catch (e) {
-              console.error('Failed to parse notification JSON:', e)
-            }
+        this.stompClient!.subscribe('/user/queue/notifications', (notification) => {
+          console.log('Received personal notification:', notification.body)
+          try {
+            const parsedNotification: NotificationDto = JSON.parse(notification.body)
+            console.log('Parsed notification:', parsedNotification)
+            this.receivedNotifications.value.push(parsedNotification)
+            console.log('Current notifications:', this.receivedNotifications.value)
+          } catch (e) {
+            console.error('Failed to parse notification JSON:', e)
           }
-        )
+        })
       },
       (error: string | Frame) => {
         console.error('STOMP Connection Error:', error)
@@ -60,11 +62,19 @@ class NotificationService {
   getNotifications() {
     return this.receivedNotifications
   }
+
+  removeNotification(vmId: number) {
+    this.receivedNotifications.value = this.receivedNotifications.value.filter(
+      (notification) => notification.vmId !== vmId
+    )
+  }
+
+  clearNotifications() {
+    this.receivedNotifications.value = []
+  }
 }
 
-let instance: NotificationService | null = null
-
-export function useNotificationService(memberId: string) {
+export function useNotificationServiceWith(memberId: string) {
   if (!instance) {
     instance = new NotificationService(memberId)
   }
