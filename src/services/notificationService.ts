@@ -15,6 +15,7 @@ let instance: NotificationService | null = null
 class NotificationService {
   private stompClient: Client | null = null
   private receivedNotifications = ref<NotificationDto[]>([])
+  private isWebSocketMessage = ref(false)
 
   constructor(private readonly memberId: string) {}
 
@@ -37,6 +38,7 @@ class NotificationService {
           try {
             const parsedNotification: NotificationDto = JSON.parse(notification.body)
             console.log('Parsed notification:', parsedNotification)
+            this.isWebSocketMessage.value = true
             this.receivedNotifications.value.push(parsedNotification)
             console.log('Current notifications:', this.receivedNotifications.value)
           } catch (e) {
@@ -61,6 +63,12 @@ class NotificationService {
 
   getNotifications() {
     return this.receivedNotifications
+  }
+
+  isWebSocketNotification() {
+    const result = this.isWebSocketMessage.value
+    this.isWebSocketMessage.value = false
+    return result
   }
 
   removeNotification(vmId: number) {

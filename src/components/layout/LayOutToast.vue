@@ -60,8 +60,8 @@ const notificationService = useNotificationServiceWith('1')
 const notifications = notificationService.getNotifications()
 
 onMounted(() => {
-  watch(notifications, (newNotifications) => {
-    if (newNotifications.length > 0) {
+  watch(notifications, (newNotifications, oldNotifications) => {
+    if (notificationService.isWebSocketNotification()) {
       const latestNotification = newNotifications[newNotifications.length - 1]
       showToast({
         type: latestNotification.type as '정상' | '비정상',
