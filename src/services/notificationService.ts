@@ -5,7 +5,7 @@ import type { Client, Frame } from 'stompjs'
 
 export interface NotificationDto {
   prevVmState: string
-  currentState: string
+  currentVmState: string
   type: string
   vmId: number
 }

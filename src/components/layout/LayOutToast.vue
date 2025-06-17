@@ -2,7 +2,7 @@
   <div class="toast-container">
     <TransitionGroup name="toast">
       <div v-for="(toast, index) in toasts" :key=" toast.id " class="toast" :class=" toast.type "
-        :style=" { bottom: `${ index * 90 }px` } ">
+        :style=" { top: `${ index * 90 }px` } ">
         <v-icon :icon=" getIcon(toast.type) " class="toast-icon" />
         <div class="toast-content">
           <div class="toast-title">{{ toast.title }}</div>
@@ -66,7 +66,7 @@ onMounted(() => {
       showToast({
         type: latestNotification.type as '정상' | '비정상',
         title: `VM ${ latestNotification.vmId } 상태 변경`,
-        message: `${ latestNotification.prevVmState } → ${ latestNotification.currentState }`,
+        message: `${ latestNotification.prevVmState } → ${ latestNotification.currentVmState }`,
         duration: 3000
       })
     }
@@ -77,13 +77,13 @@ onMounted(() => {
 <style scoped>
 .toast-container {
   position: fixed;
-  top: 64px;
-  right: 20px;
+  top: 80px;
+  right: 10px;
   z-index: 9999;
+  gap: 24px;
 }
 
 .toast {
-  position: fixed;
   right: 20px;
   padding: 16px;
   border-radius: 8px;

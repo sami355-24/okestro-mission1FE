@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <LayOutHeader />
-    <LayOutToast />
+    <LayOutToast class="toast-container" />
     <v-main>
       <router-view />
     </v-main>
@@ -24,3 +24,12 @@ onBeforeUnmount(() => {
   notificationService.disconnect()
 })
 </script>
+
+<style scoped>
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+}
+</style>
