@@ -53,7 +53,7 @@ export interface NetworkResponse {
   result: Network[]
 }
 
-export const vmService = {
+export const vmApi = {
   fetchVms: async (params: any): Promise<VmResponse> => {
     const response = await axios.get<VmResponse>('http://localhost:8080/vms', { params })
     return response.data

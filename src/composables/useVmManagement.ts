@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue'
-import { vmService, type Vm } from '@/services/vmService'
+import { vmApi, type Vm } from '@/api/vmApi'
 import { getTags, type Tag } from '@/api/tagApi'
 
 export function useVmManagement() {
@@ -32,7 +32,7 @@ export function useVmManagement() {
       if (size) params.size = size
       if (orderParam) params['order-param'] = orderParam
 
-      const response = await vmService.fetchVms(params)
+      const response = await vmApi.fetchVms(params)
       vms.value = response.result.pageContents
       page.value = response.result.pageNumber
       totalPages.value = response.result.totalPages

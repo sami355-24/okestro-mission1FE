@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useNotificationServiceWith } from '@/services/notificationService'
+import { useNotificationServiceWith } from '@/api/notificationApi'
 
 interface Toast {
   id: number

@@ -55,9 +55,8 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { vmService, type Network } from '@/services/vmService'
-import { getTags, type Tag } from '@/api/tagApi'
-import axios from 'axios'
+import { vmApi, type Network } from '@/api/vmApi'
+import { getTags, postTag, type Tag } from '@/api/tagApi'
 
 interface Props {
   modelValue: boolean
@@ -111,7 +110,7 @@ const selectedTagIds = ref<string[]>([])
 const checkVmName = async () => {
   isCheckingName.value = true
   try {
-    const response = await vmService.checkVmName(newVm.value.name)
+    const response = await vmApi.checkVmName(newVm.value.name)
     isNameChecked.value = true
     isNameDuplicate.value = response.result.IsDuplicate
   } catch (error) {
@@ -134,7 +133,7 @@ const createVm = async () => {
     }
 
     console.log('Creating VM with:', vmRequest)
-    await vmService.createVm(vmRequest)
+    await vmApi.createVm(vmRequest)
 
     closeDialog()
     emit('vm-created')
@@ -168,7 +167,7 @@ watch(() => newVm.value.name, () => {
 
 const fetchNetworks = async () => {
   try {
-    const response = await vmService.fetchNetworks()
+    const response = await vmApi.fetchNetworks()
     networkList.value = response.result
   } catch (error) {
     console.error('네트워크 목록 조회 실패:', error)
@@ -197,13 +196,10 @@ const createTag = async (tags: string[]) => {
   for (const v of tags) {
     if (!tagList.value.some(tag => tag.id === v || tag.tagName === v)) {
       try {
-        console.log(v)
-        const res = await axios.post(`http://localhost:8080/tags?name=${ encodeURIComponent(v) }`)
-        const newTagId = String(res.data.result)
-        console.log(res.data)
-        tagList.value.push({ id: newTagId, tagName: v })
+        const newTag = await postTag(v)
+        tagList.value.push(newTag)
         const idx = selectedTagIds.value.findIndex(t => t === v)
-        if (idx !== -1) selectedTagIds.value[idx] = newTagId
+        if (idx !== -1) selectedTagIds.value[idx] = newTag.id
       } catch (e) {
         alert('태그 생성 실패')
       }

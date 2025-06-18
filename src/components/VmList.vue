@@ -1,19 +1,20 @@
 <template>
   <div>
-    <v-data-table :headers=" headers " :items=" vms " :loading=" loading " class="elevation-1" :items-per-page=" itemsPerPage "
-      hide-default-footer>
+    <v-data-table :headers=" headers " :items=" vms " :loading=" loading " class="elevation-1"
+      :items-per-page=" itemsPerPage " hide-default-footer>
       <template #item.tags="{ item }">
         {{ item.tags.join(', ') }}
       </template>
     </v-data-table>
 
-    <v-pagination v-model=" currentPage " :length=" totalPages " @update:model-value=" handlePageChange " class="mt-4" />
+    <v-pagination v-model=" currentPage " :length=" totalPages " @update:model-value=" handlePageChange "
+      class="mt-4" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Vm } from '@/services/vmService'
+import type { Vm } from '@/api/vmApi'
 
 interface Props {
   vms: Vm[]

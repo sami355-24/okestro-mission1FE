@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { useNotificationServiceWith } from '@/services/notificationService'
+import { useNotificationServiceWith } from '@/api/notificationApi'
 import { computed, ref } from 'vue'
 
 const notificationService = useNotificationServiceWith('1')

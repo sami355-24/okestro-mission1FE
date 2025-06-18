@@ -12,3 +12,11 @@ export const getTags = async (): Promise<Tag[]> => {
     tagName: tag.tagName,
   }))
 }
+
+export const postTag = async (name: string): Promise<Tag> => {
+  const response = await axios.post(`http://localhost:8080/tags?name=${encodeURIComponent(name)}`)
+  return {
+    id: String(response.data.result),
+    tagName: name
+  }
+}
