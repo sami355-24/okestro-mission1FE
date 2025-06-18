@@ -1,10 +1,9 @@
 <template>
   <div class="filter-options">
     <span>태그:</span>
-    <v-combobox :model-value=" selectedTags " @update:model-value=" handleTagsChange " :items=" tagList "
-      item-title="tagName" item-value="id" placeholder="태그를 선택하거나 입력하세요" multiple chips small-chips clearable
-      class="tag-combobox mx-2" density="compact" variant="outlined" hide-details :return-object=" false "
-      :menu-props=" { maxWidth: '500px' } " />
+    <v-combobox v-model=" selectedTagsLocal " :items=" tagList " item-title="tagName" item-value="id"
+      placeholder="태그를 선택하세요" multiple chips small-chips clearable class="tag-combobox mx-2" density="compact"
+      variant="outlined" hide-details :return-object=" false " :menu-props=" { maxWidth: '500px' } " />
 
     <span class="ml-4">표시 개수:</span>
     <v-btn v-for="size in sizeOptions" :key=" size " :color=" selectedSize === size ? 'primary' : 'grey' "
@@ -15,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { Tag } from '@/api/tagApi'
 
 interface Props {
@@ -31,24 +31,28 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const selectedTagsLocal = ref<string[]>([])
+
+// props.selectedTags가 변경될 때 로컬 상태 업데이트
+watch(() => props.selectedTags, (newTags) => {
+  selectedTagsLocal.value = [...newTags]
+}, { immediate: true })
+
+// 로컬 상태가 변경될 때 이벤트 발생
+watch(selectedTagsLocal, (newTags) => {
+  const removedTags = props.selectedTags.filter(tag => !newTags.includes(tag))
+  const addedTags = newTags.filter(tag => !props.selectedTags.includes(tag))
+
+  removedTags.forEach(tag => {
+    emit('tag-toggle', tag)
+  })
+
+  addedTags.forEach(tag => {
+    emit('tag-toggle', tag)
+  })
+})
+
 const sizeOptions = [5, 10, 20]
-
-const handleTagsChange = (tags: string[]) => {
-  const currentSet = new Set(props.selectedTags)
-  const newSet = new Set(tags)
-
-  for (const tag of newSet) {
-    if (!currentSet.has(tag)) {
-      emit('tag-toggle', tag)
-    }
-  }
-
-  for (const tag of currentSet) {
-    if (!newSet.has(tag)) {
-      emit('tag-toggle', tag)
-    }
-  }
-}
 
 const handleSizeChange = (size: number) => {
   emit('size-change', size)
@@ -63,7 +67,7 @@ const handleSizeChange = (size: number) => {
 }
 
 .tag-combobox {
-  min-width: 300px;
+  min-width: 200px;
   max-width: 500px;
   flex-grow: 1;
 }
