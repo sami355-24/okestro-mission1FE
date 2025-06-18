@@ -34,7 +34,7 @@
             </v-col>
           </v-row>
           <v-combobox v-model=" selectedTagIds " :items=" tagList " item-title="tagName" item-value="id" label="태그"
-            multiple chips clearable :return-object=" false " />
+            multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
           <v-select v-model=" selectedNetworkIds " :items=" networkList " label="네트워크" multiple chips
             :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId"
             :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { vmService, type CreateVmRequest, type Network } from '@/services/vmService'
+import { vmService, type Network } from '@/services/vmService'
 import { getTags, type Tag } from '@/api/tagApi'
 import axios from 'axios'
 
@@ -192,4 +192,22 @@ watch(dialogVisible, (newValue) => {
     closeDialog()
   }
 })
+
+const createTag = async (tags: string[]) => {
+  for (const v of tags) {
+    if (!tagList.value.some(tag => tag.id === v || tag.tagName === v)) {
+      try {
+        console.log(v)
+        const res = await axios.post(`http://localhost:8080/tags?name=${ encodeURIComponent(v) }`)
+        const newTagId = String(res.data.result)
+        console.log(res.data)
+        tagList.value.push({ id: newTagId, tagName: v })
+        const idx = selectedTagIds.value.findIndex(t => t === v)
+        if (idx !== -1) selectedTagIds.value[idx] = newTagId
+      } catch (e) {
+        alert('태그 생성 실패')
+      }
+    }
+  }
+}
 </script>
