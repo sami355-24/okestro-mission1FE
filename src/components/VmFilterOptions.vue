@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <div class="filter-options">
     <span>태그:</span>
-    <v-btn v-for="tag in tagList" :key=" tag.id " :color=" selectedTags.includes(tag.id) ? 'primary' : 'grey' "
-      @click="handleTagToggle(tag.id)" class="mx-1" size="small">
-      {{ tag.tagName }}
-    </v-btn>
+    <v-combobox :model-value=" selectedTags " @update:model-value=" handleTagsChange " :items=" tagList "
+      item-title="tagName" item-value="id" placeholder="태그를 선택하거나 입력하세요" multiple chips small-chips clearable
+      class="tag-combobox mx-2" density="compact" variant="outlined" hide-details :return-object=" false "
+      :menu-props=" { maxWidth: '500px' } " />
 
     <span class="ml-4">표시 개수:</span>
     <v-btn v-for="size in sizeOptions" :key=" size " :color=" selectedSize === size ? 'primary' : 'grey' "
@@ -31,16 +31,59 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// 표시 개수 옵션
 const sizeOptions = [5, 10, 20]
 
-// 태그 토글 핸들러
-const handleTagToggle = (tagId: string) => {
-  emit('tag-toggle', tagId)
+const handleTagsChange = (tags: string[]) => {
+  const currentSet = new Set(props.selectedTags)
+  const newSet = new Set(tags)
+
+  for (const tag of newSet) {
+    if (!currentSet.has(tag)) {
+      emit('tag-toggle', tag)
+    }
+  }
+
+  for (const tag of currentSet) {
+    if (!newSet.has(tag)) {
+      emit('tag-toggle', tag)
+    }
+  }
 }
 
-// 표시 개수 변경 핸들러
 const handleSizeChange = (size: number) => {
   emit('size-change', size)
 }
 </script>
+
+<style scoped>
+.filter-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-combobox {
+  min-width: 300px;
+  max-width: 500px;
+  flex-grow: 1;
+}
+
+:deep(.v-list-item-title) {
+  white-space: normal;
+  word-break: break-word;
+  padding: 4px 0;
+}
+
+:deep(.v-field__input) {
+  min-height: 40px !important;
+}
+
+:deep(.v-combobox__selection) {
+  overflow: visible;
+}
+
+:deep(.v-list-item) {
+  min-height: 35px;
+  padding: 4px 16px;
+}
+</style>

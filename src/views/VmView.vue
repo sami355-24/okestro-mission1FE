@@ -2,7 +2,8 @@
   <div class="mb-4 mt-4">
     <div class="d-flex justify-space-between align-center mb-4">
       <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; gap: 10px;">
-        <VmFilterOptions :tag-list=" tagList " :selected-tags=" selectedTags " :selected-size=" selectedSize " @tag-toggle=" toggleTag " @size-change=" handleSizeChange " />
+        <VmFilterOptions :tag-list=" tagList " :selected-tags=" selectedTags " :selected-size=" selectedSize "
+          @tag-toggle=" toggleTag " @size-change=" handleSizeChange " />
         <VmSortOptions :selected-order=" selectedOrder " @order-change=" handleOrderChange " />
       </div>
       <v-btn color="primary" prepend-icon="mdi-plus" @click="showCreateDialog = true">
@@ -65,5 +66,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

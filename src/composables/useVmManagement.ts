@@ -28,7 +28,9 @@ export function useVmManagement() {
     loading.value = true
     try {
       const params: any = { page: pageNumber }
-      if (tags) params.tags = tags.join(',')
+      if (tags && tags.length > 0) {
+        params.tags = tags.join(',')
+      }
       if (size) params.size = size
       if (orderParam) params['order-param'] = orderParam
 
@@ -63,7 +65,7 @@ export function useVmManagement() {
   const fetchVmsWithParams = (pageNumber = page.value) => {
     fetchVms({
       pageNumber,
-      tags: selectedTags.value.length ? selectedTags.value : undefined,
+      tags: selectedTags.value,
       size: selectedSize.value,
       orderParam: selectedOrder.value
     })
