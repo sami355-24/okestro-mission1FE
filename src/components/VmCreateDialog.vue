@@ -17,8 +17,7 @@
               중복확인
             </v-btn>
           </div>
-          <v-text-field v-model=" newVm.description " label="설명" :rules=" [v => !!v || '설명을 입력해주세요'] "
-            required></v-text-field>
+          <v-text-field v-model=" newVm.description " label="설명"></v-text-field>
           <v-row>
             <v-col cols="4">
               <v-text-field v-model.number=" newVm.vCpu " label="vCPU" type="number"
@@ -193,7 +192,6 @@ watch(dialogVisible, (newValue) => {
 })
 
 const createTag = async (tags: string[]) => {
-  console.log('createTag', tags)
   for (const v of tags) {
     if (!tagList.value.some(tag => tag.id === v || tag.tagName === v)) {
       try {
