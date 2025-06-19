@@ -20,3 +20,15 @@ export const postTag = async (name: string): Promise<Tag> => {
     tagName: name
   }
 }
+
+export const deleteTag = async (id: string): Promise<void> => {
+  await axios.delete(`http://localhost:8080/tags/${id}`)
+}
+
+// export const putTag = async (id: string, name: string): Promise<Tag> => {
+//   const response = await axios.put(`http://localhost:8080/tags/${id}?name=${encodeURIComponent(name)}`)
+//   return {
+//     id: String(response.data.result),
+//     tagName: name
+//   }
+// }

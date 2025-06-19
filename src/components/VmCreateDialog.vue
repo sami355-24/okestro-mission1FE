@@ -193,6 +193,7 @@ watch(dialogVisible, (newValue) => {
 })
 
 const createTag = async (tags: string[]) => {
+  console.log('createTag', tags)
   for (const v of tags) {
     if (!tagList.value.some(tag => tag.id === v || tag.tagName === v)) {
       try {
