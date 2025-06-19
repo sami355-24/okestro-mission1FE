@@ -9,6 +9,7 @@ import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 
 import VmView from './views/VmView.vue'
+import VmDetailView from './views/VmDetailView.vue'
 import App from './App.vue'
 
 const vuetify = createVuetify({
@@ -19,6 +20,7 @@ const vuetify = createVuetify({
 const routes = [
   { path: '/', redirect: '/vms' },
   { path: '/vms', component: VmView },
+  { path: '/vm/:vmId', component: VmDetailView },
 ]
 
 const router = createRouter({

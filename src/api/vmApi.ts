@@ -7,6 +7,22 @@ export interface Vm {
   privateIp: string
 }
 
+export interface VmDetail {
+  networks: Network[]
+  vmId: number
+  vmStatus: string
+  description: string
+  vmName: string
+  vCpu: number
+  memory: number
+  cpuUsage: number
+  memoryUsage: number
+  storage: number
+  createAt: string
+  updateAt: string | null
+  privateIp: string
+}
+
 export interface VmResponse {
   metaData: {
     statusCode: number
@@ -53,7 +69,25 @@ export interface NetworkResponse {
   result: Network[]
 }
 
+export interface VmDetailResponse {
+  metaData: {
+    statusCode: number
+    statusMessage: string
+  }
+  result: VmDetail
+}
+
 export const vmApi = {
+
+  featchDetailVm: async (vmId: string): Promise<VmResponse> => {
+    const response = await axios.get<VmResponse>(`http://localhost:8080/vms/${vmId}`, {
+      headers: {
+        memberId: '1'
+      }
+    })
+    return response.data
+  },
+
   fetchVms: async (params: any): Promise<VmResponse> => {
     const response = await axios.get<VmResponse>('http://localhost:8080/vms', { params })
     return response.data
@@ -82,6 +116,15 @@ export const vmApi = {
 
   fetchNetworks: async (): Promise<NetworkResponse> => {
     const response = await axios.get<NetworkResponse>('http://localhost:8080/networks', {
+      headers: {
+        memberId: '1'
+      }
+    })
+    return response.data
+  },
+
+  fetchVmDetail: async (vmId: string): Promise<VmDetailResponse> => {
+    const response = await axios.get<VmDetailResponse>(`http://localhost:8080/vms/${vmId}`, {
       headers: {
         memberId: '1'
       }

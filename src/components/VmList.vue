@@ -2,6 +2,12 @@
   <div>
     <v-data-table :headers=" headers " :items=" vms " :loading=" loading " class="elevation-1"
       :items-per-page=" itemsPerPage " hide-default-footer>
+      <template #item.vmName="{ item }">
+        <router-link :to=" `/vm/${ item.vmId }` " class="vm-link">
+          {{ item.vmName }}
+        </router-link>
+      </template>
+
       <template #item.tags="{ item }">
         {{ item.tags.join(', ') }}
       </template>
@@ -49,6 +55,13 @@ const handlePageChange = (newPage: number) => {
 </script>
 
 <style scoped>
+.vm-link {
+  color: #1976d2;
+  /* 기존 색상 */
+  text-decoration: none;
+  /* 밑줄 제거 */
+}
+
 :deep(.v-table__wrapper thead) {
   background-color: #e6e6e6;
 }
