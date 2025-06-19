@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { Network } from './networkApi'
 
 export interface Vm {
   vmId: number
@@ -55,20 +56,6 @@ export interface VmNameCheckResponse {
   }
 }
 
-export interface Network {
-  networkId: number
-  openIp: string
-  openPort: number
-}
-
-export interface NetworkResponse {
-  metaData: {
-    statusCode: number
-    statusMessage: string
-  }
-  result: Network[]
-}
-
 export interface VmDetailResponse {
   metaData: {
     statusCode: number
@@ -78,7 +65,6 @@ export interface VmDetailResponse {
 }
 
 export const vmApi = {
-
   featchDetailVm: async (vmId: string): Promise<VmResponse> => {
     const response = await axios.get<VmResponse>(`http://localhost:8080/vms/${vmId}`, {
       headers: {
@@ -107,15 +93,6 @@ export const vmApi = {
       params: {
         'vm-name': name
       },
-      headers: {
-        memberId: '1'
-      }
-    })
-    return response.data
-  },
-
-  fetchNetworks: async (): Promise<NetworkResponse> => {
-    const response = await axios.get<NetworkResponse>('http://localhost:8080/networks', {
       headers: {
         memberId: '1'
       }

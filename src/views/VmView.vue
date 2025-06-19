@@ -1,5 +1,5 @@
 <template class="ml-4">
-  <div class="mb-4 mt-4">
+  <div class="ma-4">
     <div class="d-flex justify-space-between align-center mb-4">
       <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; gap: 10px;">
         <VmFilterOptions :tag-list=" tagList " :selected-tags=" selectedTags " :selected-size=" selectedSize "
@@ -58,6 +58,7 @@ const handleSizeChange = (size: number) => {
 
 const handleVmCreated = () => {
   fetchVmsWithParams()
+  fetchTags()
 }
 
 const handleVmRefresh = () => {

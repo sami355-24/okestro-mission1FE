@@ -54,7 +54,8 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { vmApi, type Network } from '@/api/vmApi'
+import { vmApi } from '@/api/vmApi'
+import { networkApi, type Network } from '@/api/networkApi'
 import { getTags, postTag, type Tag } from '@/api/tagApi'
 
 interface Props {
@@ -166,7 +167,7 @@ watch(() => newVm.value.name, () => {
 
 const fetchNetworks = async () => {
   try {
-    const response = await vmApi.fetchNetworks()
+    const response = await networkApi.fetchNetworks()
     networkList.value = response.result
   } catch (error) {
     console.error('네트워크 목록 조회 실패:', error)
