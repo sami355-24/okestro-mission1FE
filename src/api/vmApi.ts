@@ -107,5 +107,14 @@ export const vmApi = {
       }
     })
     return response.data
+  },
+
+  deleteVm: async (vmId: number): Promise<any> => {
+    const response = await axios.delete(`http://localhost:8080/vms/${vmId}`, {
+      headers: {
+        memberId: '1'
+      }
+    })
+    return response.data
   }
 } 
