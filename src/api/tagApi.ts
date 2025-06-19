@@ -24,3 +24,12 @@ export const postTag = async (name: string): Promise<Tag> => {
 export const deleteTag = async (id: string): Promise<void> => {
   await axios.delete(`http://localhost:8080/tags/${id}`)
 }
+
+export const putTag = async (id: string, name: string): Promise<void> => {
+  await axios.put(`http://localhost:8080/tags/${id}?tag-name=${encodeURIComponent(name)}`)
+}
+
+export const validateTagName = async (name: string): Promise<boolean> => {
+  const response = await axios.get(`http://localhost:8080/tags/validate?name=${encodeURIComponent(name)}`)
+  return response.data.result
+}

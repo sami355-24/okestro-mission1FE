@@ -2,15 +2,16 @@
   <div class="filter-options">
     <span>태그:</span>
     <v-combobox v-model=" selectedTagsLocal " :items=" tagList " item-title="tagName" item-value="id"
-      placeholder="태그를 선택하세요" multiple chips small-chips clearable class="tag-combobox mx-2" density="compact"
-      variant="outlined" hide-details :return-object=" false " :menu-props=" { maxWidth: '500px' } ">
+      placeholder="태그를 선택하세요" multiple chips small-chips class="tag-combobox mx-2" density="compact" variant="outlined"
+      hide-details :return-object=" false " :menu-props=" { maxWidth: '500px' } " :filter=" () => true " hide-no-data
+      @keydown.prevent>
       <template v-slot:item="{ props, item }">
         <v-list-item v-bind=" props ">
           <template v-slot:title>
             <div class="d-flex align-center justify-space-between">
               <span>{{ item.raw.tagName }}</span>
               <div class="tag-actions" style="display: flex; gap: 4px;">
-                <!-- <v-btn icon="mdi-pencil" variant="text" size="small" @click.stop="editTag(item.raw.id)"></v-btn> -->
+                <v-btn icon="mdi-pencil" variant="text" size="small" @click.stop="editTag(item.raw.id)"></v-btn>
                 <v-btn icon="mdi-delete" variant="text" size="small" @click.stop="deleteTag(item.raw.id)"></v-btn>
               </div>
             </div>
@@ -30,7 +31,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { Tag } from '@/api/tagApi'
-import { deleteTag as apiDeleteTag } from '@/api/tagApi'
+import { deleteTag as apiDeleteTag, putTag as apiPutTag, validateTagName as apiValidateTagName } from '@/api/tagApi'
 
 interface Props {
   tagList: Tag[]
@@ -72,6 +73,21 @@ const sizeOptions = [5, 10, 20]
 
 const handleSizeChange = (size: number) => {
   emit('size-change', size)
+}
+
+const editTag = async (tagId: string) => {
+  const newName = prompt('새로운 태그 이름을 입력하세요')
+  if (newName) {
+    const isValid = await apiValidateTagName(newName)
+    console.log('isValid', isValid)
+    if (!isValid) {
+      alert('이미 존재하는 태그입니다.')
+      return
+    }
+    await apiPutTag(tagId, newName)
+    emit('refresh-vms')
+    emit('refresh-tags')
+  }
 }
 
 const deleteTag = async (tagId: string) => {
@@ -117,6 +133,10 @@ const deleteTag = async (tagId: string) => {
 :deep(.v-list-item) {
   min-height: 35px;
   padding: 4px 16px;
+}
+
+:deep(.v-field__input input) {
+  caret-color: transparent !important;
 }
 
 .tag-actions {
