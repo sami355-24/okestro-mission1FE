@@ -47,3 +47,14 @@ const handlePageChange = (newPage: number) => {
   emit('page-change', newPage)
 }
 </script>
+
+<style scoped>
+:deep(.v-table__wrapper thead) {
+  background-color: #e6e6e6;
+}
+
+:deep(.v-table__wrapper th) {
+  color: #000000;
+  font-weight: bold !important;
+}
+</style>

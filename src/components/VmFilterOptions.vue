@@ -41,10 +41,13 @@ interface Props {
 interface Emits {
   (e: 'tag-toggle', tagId: string): void
   (e: 'size-change', size: number): void
+  (e: 'refresh-vms'): void
+  (e: 'refresh-tags'): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
 
 const selectedTagsLocal = ref<string[]>([])
 
@@ -75,7 +78,8 @@ const deleteTag = async (tagId: string) => {
   try {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
     await apiDeleteTag(tagId)
-    // 삭제 후 추가 동작이 필요하다면 여기에 작성 (예: 태그 목록 새로고침 등)
+    emit('refresh-vms')
+    emit('refresh-tags')
   } catch (e) {
     console.error('태그 삭제 실패:', e)
   }

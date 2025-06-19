@@ -3,7 +3,7 @@
     <div class="d-flex justify-space-between align-center mb-4">
       <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; gap: 10px;">
         <VmFilterOptions :tag-list=" tagList " :selected-tags=" selectedTags " :selected-size=" selectedSize "
-          @tag-toggle=" toggleTag " @size-change=" handleSizeChange " />
+          @tag-toggle=" toggleTag " @size-change=" handleSizeChange " @refresh-vms=" handleVmRefresh " @refresh-tags=" fetchTags " />
         <VmSortOptions :selected-order=" selectedOrder " @order-change=" handleOrderChange " />
       </div>
       <v-btn color="primary" prepend-icon="mdi-plus" @click="showCreateDialog = true">
@@ -53,10 +53,15 @@ const handleOrderChange = (order: string) => {
 
 const handleSizeChange = (size: number) => {
   selectedSize.value = size
-  fetchVmsWithParams()
+  fetchVmsWithParams(1)
 }
 
 const handleVmCreated = () => {
+  fetchVmsWithParams()
+}
+
+const handleVmRefresh = () => {
+  selectedTags.value = []
   fetchVmsWithParams()
 }
 
