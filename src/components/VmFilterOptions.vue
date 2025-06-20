@@ -20,9 +20,9 @@
       </template>
     </v-combobox>
 
-    <span class="ml-4">표시 개수:</span>
+    <span class="mx-2">표시 개수:</span>
     <v-btn v-for="size in sizeOptions" :key=" size " :color=" selectedSize === size ? 'primary' : 'grey' "
-      @click="handleSizeChange(size)" class="mx-1" size="small">
+      @click="handleSizeChange(size)" class="ml-1" size="small">
       {{ size }}
     </v-btn>
   </div>

@@ -3,6 +3,10 @@
     <div class="d-flex align-center mb-4">
       <v-btn icon="mdi-arrow-left" variant="text" @click="$router.push('/vms')" class="mr-2"></v-btn>
       <h1 class="text-h4">VM 상세 정보</h1>
+      <div class="ml-auto">
+        <v-btn color="primary" class="mx-1" @click=" openUpdateDialog ">VM 수정</v-btn>
+        <v-btn color="error" class="mx-1" @click=" vmDelete ">VM 삭제</v-btn>
+      </div>
     </div>
 
     <v-card v-if="loading" class="pa-4">
@@ -131,19 +135,26 @@
         VM 목록으로 돌아가기
       </v-btn>
     </v-card>
+
+    <!-- VM 수정 다이얼로그 -->
+    <VmUpdate v-model=" showUpdateDialog " :vm=" currentVm " :vm-detail=" vmDetail " @vm-updated=" handleVmUpdated " />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
-import type { VmDetail } from '@/api/vmApi'
+import type { VmDetail, Vm } from '@/api/vmApi'
 import { vmApi } from '@/api/vmApi'
+import VmUpdate from '@/components/VmUpdate.vue'
 
 const route = useRoute()
+const router = useRouter()
 const vmId = computed(() => route.params.vmId as string)
 const vmDetail = ref<VmDetail | null>(null)
 const loading = ref(false)
+const showUpdateDialog = ref(false)
+const currentVm = ref<Vm | null>(null)
 
 const fetchVmDetail = async () => {
   if (!vmId.value) return
@@ -183,6 +194,37 @@ const getStatusColor = (status: string) => {
 const formatDate = (dateString: string) => {
   if (!dateString) return '정보 없음'
   return new Date(dateString).toLocaleString('ko-KR')
+}
+
+const vmDelete = async () => {
+  if (confirm(`정말로 VM "${ vmDetail.value?.vmName }"을 삭제하시겠습니까?`)) {
+    try {
+      await vmApi.deleteVm(Number(vmId.value))
+      alert(`VM "${ vmDetail.value?.vmName }"이 성공적으로 삭제되었습니다.`)
+      router.push('/vms')
+    } catch (error) {
+      console.error('VM 삭제 실패:', error)
+      alert('VM 삭제에 실패했습니다.')
+    }
+  }
+}
+
+const openUpdateDialog = () => {
+  if (vmDetail.value) {
+    // VmDetail을 Vm 형태로 변환
+    currentVm.value = {
+      vmId: vmDetail.value.vmId,
+      vmName: vmDetail.value.vmName,
+      tags: [], // VmDetail에는 tags가 없으므로 빈 배열
+      privateIp: vmDetail.value.privateIp
+    }
+    showUpdateDialog.value = true
+  }
+}
+
+const handleVmUpdated = () => {
+  // VM 수정 후 상세 정보 새로고침
+  fetchVmDetail()
 }
 
 onMounted(() => {

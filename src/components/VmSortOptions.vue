@@ -1,8 +1,9 @@
 <template>
   <div>
-    <span class="ml-4">정렬:</span>
-    <v-btn v-for="order in sortOptions" :key=" order.value " :color=" selectedOrder === order.value ? 'primary' : 'grey' "
-      @click="handleOrderChange(order.value)" class="mx-1" size="small">
+    <span class="mx-2">정렬:</span>
+    <v-btn v-for="order in sortOptions" :key=" order.value "
+      :color=" selectedOrder === order.value ? 'primary' : 'grey' " @click="handleOrderChange(order.value)" class="mx-1"
+      size="small">
       {{ order.label }}
     </v-btn>
   </div>

@@ -79,7 +79,6 @@ const handlePageChange = (newPage: number) => {
 }
 
 const editVm = (vm: Vm) => {
-  
   emit('edit-vm', vm)
 }
 
