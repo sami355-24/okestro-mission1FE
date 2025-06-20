@@ -3,7 +3,7 @@
     <v-data-table :headers=" headers " :items=" vms " :loading=" loading " class="elevation-1"
       :items-per-page=" itemsPerPage " hide-default-footer>
       <template #item.vmName="{ item }">
-        <router-link :to=" `/vm/${ item.vmId }` " class="vm-link">
+        <router-link :to=" `/vms/${ item.vmId }` " class="vm-link">
           {{ item.vmName }}
         </router-link>
       </template>

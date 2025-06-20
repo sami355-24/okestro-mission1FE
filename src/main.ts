@@ -20,7 +20,7 @@ const vuetify = createVuetify({
 const routes = [
   { path: '/', redirect: '/vms' },
   { path: '/vms', component: VmView },
-  { path: '/vm/:vmId', component: VmDetailView },
+  { path: '/vms/:vmId', component: VmDetailView },
 ]
 
 const router = createRouter({
