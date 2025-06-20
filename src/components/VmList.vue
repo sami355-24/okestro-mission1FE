@@ -18,13 +18,13 @@
             <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind=" props " @click.stop></v-btn>
           </template>
           <v-list>
-            <v-list-item @click="editVm(item)">
+            <v-list-item @click.stop="editVm(item)">
               <template v-slot:prepend>
                 <v-icon icon="mdi-pencil" size="small"></v-icon>
               </template>
               <v-list-item-title>수정</v-list-item-title>
             </v-list-item>
-            <v-list-item @click="deleteVm(item)">
+            <v-list-item @click.stop="deleteVm(item)">
               <template v-slot:prepend>
                 <v-icon icon="mdi-delete" size="small" color="error"></v-icon>
               </template>
@@ -79,6 +79,7 @@ const handlePageChange = (newPage: number) => {
 }
 
 const editVm = (vm: Vm) => {
+  
   emit('edit-vm', vm)
 }
 
@@ -90,9 +91,7 @@ const deleteVm = (vm: Vm) => {
 <style scoped>
 .vm-link {
   color: #1976d2;
-  /* 기존 색상 */
   text-decoration: none;
-  /* 밑줄 제거 */
 }
 
 :deep(.v-table__wrapper thead) {

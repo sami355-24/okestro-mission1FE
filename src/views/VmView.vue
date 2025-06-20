@@ -17,14 +17,16 @@
       @delete-vm=" handleDeleteVm " />
 
     <VmCreateDialog v-model=" showCreateDialog " :tag-list=" tagList " @vm-created=" handleVmCreated " />
+    <VmUpdate v-model=" showUpdateDialog " :vm=" selectedVm " @vm-updated=" handleVmUpdated " />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useVmManagement } from '@/composables/useVmManagement'
 import VmList from '@/components/VmList.vue'
 import VmCreateDialog from '@/components/VmCreateDialog.vue'
+import VmUpdate from '@/components/VmUpdate.vue'
 import VmSortOptions from '@/components/VmSortOptions.vue'
 import VmFilterOptions from '@/components/VmFilterOptions.vue'
 import type { Vm } from '@/api/vmApi'
@@ -46,6 +48,9 @@ const {
   onPageChange
 } = useVmManagement()
 
+const showUpdateDialog = ref(false)
+const selectedVm = ref<Vm | null>(null)
+
 const handlePageChange = (newPage: number) => {
   onPageChange(newPage)
 }
@@ -64,15 +69,18 @@ const handleVmCreated = () => {
   fetchVmsWithParams()
 }
 
+const handleVmUpdated = () => {
+  fetchVmsWithParams()
+}
+
 const handleVmRefresh = () => {
   selectedTags.value = []
   fetchVmsWithParams()
 }
 
 const handleEditVm = (vm: Vm) => {
-  console.log('VM 수정:', vm)
-  // TODO: VM 수정 다이얼로그 구현
-  alert(`VM "${ vm.vmName }" 수정 기능을 구현해주세요.`)
+  selectedVm.value = vm
+  showUpdateDialog.value = true
 }
 
 const handleDeleteVm = async (vm: Vm) => {
@@ -80,7 +88,6 @@ const handleDeleteVm = async (vm: Vm) => {
     try {
       await vmApi.deleteVm(vm.vmId)
       alert(`VM "${ vm.vmName }"이 성공적으로 삭제되었습니다.`)
-      // VM 목록 새로고침
       fetchVmsWithParams()
     } catch (error) {
       console.error('VM 삭제 실패:', error)
