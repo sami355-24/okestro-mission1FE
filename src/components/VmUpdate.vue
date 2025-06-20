@@ -82,12 +82,16 @@ const updatedVm = ref<{
   vCpu: number
   memory: number
   storage: number
+  networkIds: number[]
+  tagIds: string[]
 }>({
   name: '',
   description: '',
   vCpu: 1,
   memory: 1,
-  storage: 20
+  storage: 20,
+  networkIds: [],
+  tagIds: []
 })
 
 const checkVmName = async () => {
@@ -111,9 +115,22 @@ const updateVm = async () => {
   if (!props.vm) return
 
   try {
-    // TODO: VM 수정 API 호출
-    console.log('Updating VM:', updatedVm.value)
-    // await vmApi.updateVm(props.vm.vmId, updatedVm.value)
+    const updateData: any = {
+      name: updatedVm.value.name,
+      description: updatedVm.value.description,
+      vCpu: updatedVm.value.vCpu,
+      memory: updatedVm.value.memory
+    }
+
+    if (updatedVm.value.networkIds.length > 0) {
+      updateData.networkIds = updatedVm.value.networkIds
+    }
+
+    if (updatedVm.value.tagIds.length > 0) {
+      updateData.tagIds = updatedVm.value.tagIds
+    }
+
+    await vmApi.updateVm(props.vm.vmId, updateData)
 
     closeDialog()
     emit('vm-updated')
@@ -123,32 +140,34 @@ const updateVm = async () => {
 }
 
 const closeDialog = () => {
-  dialogVisible.value = false
   resetForm()
+  dialogVisible.value = false
 }
 
 const resetForm = () => {
-  updatedVm.value = {
-    name: '',
-    description: '',
-    vCpu: 1,
-    memory: 1,
-    storage: 20
-  }
+  updatedVm.value.networkIds = []
+  updatedVm.value.tagIds = []
+  updatedVm.value.name = ''
+  updatedVm.value.description = ''
+  updatedVm.value.vCpu = 1
+  updatedVm.value.memory = 1
+  updatedVm.value.storage = 20
+
   isNameChecked.value = false
   isNameDuplicate.value = false
   form.value?.reset()
 }
 
-// VM 데이터가 변경될 때 폼 초기화
 watch(() => props.vm, (newVm) => {
   if (newVm) {
     updatedVm.value = {
       name: newVm.vmName,
-      description: '', // API에서 description이 없으므로 빈 문자열
-      vCpu: 1, // API에서 vCpu가 없으므로 기본값
-      memory: 1, // API에서 memory가 없으므로 기본값
-      storage: 20 // API에서 storage가 없으므로 기본값
+      description: '',
+      vCpu: 1,
+      memory: 1,
+      storage: 20,
+      networkIds: [],
+      tagIds: []
     }
   }
 }, { immediate: true })

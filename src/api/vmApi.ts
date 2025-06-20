@@ -46,6 +46,15 @@ export interface CreateVmRequest {
   tagIds: string[]
 }
 
+export interface UpdateVmRequest {
+  name: string
+  description: string
+  vCpu: number
+  memory: number
+  networkIds: number[]
+  tagIds: string[]
+}
+
 export interface VmNameCheckResponse {
   metaData: {
     statusCode: number
@@ -111,6 +120,15 @@ export const vmApi = {
 
   deleteVm: async (vmId: number): Promise<any> => {
     const response = await axios.delete(`http://localhost:8080/vms/${vmId}`, {
+      headers: {
+        memberId: '1'
+      }
+    })
+    return response.data
+  },
+
+  updateVm: async (vmId: number, vmData: UpdateVmRequest): Promise<any> => {
+    const response = await axios.patch(`http://localhost:8080/vms/${vmId}`, vmData, {
       headers: {
         memberId: '1'
       }
