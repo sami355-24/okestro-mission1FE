@@ -4,7 +4,18 @@
       <v-card-title>VM 생성</v-card-title>
       <v-card-text>
         <v-form ref="form" v-model=" isFormValid ">
-          <v-text-field v-model=" newVm.name " label="VM 이름" required :rules=" nameRules " @blur=" checkVmName " />
+          <div class="d-flex align-center gap-2">
+            <v-text-field v-model=" newVm.name " label="VM 이름" :rules=" nameRules " required
+              :error=" vmStore.isNameChecked && vmStore.isNameDuplicate "
+              :error-messages=" vmStore.isNameChecked && vmStore.isNameDuplicate ? ['이미 사용 중인 VM 이름입니다'] : [] "
+              :color=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? 'success' : undefined "
+              :messages=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? ['사용 가능한 VM 이름입니다'] : [] "
+              persistent-hint />
+            <v-btn color="primary" variant="outlined" :disabled=" !newVm.name " @click=" checkVmName "
+              :loading=" vmStore.isCheckingName ">
+              중복확인
+            </v-btn>
+          </div>
           <v-textarea v-model=" newVm.description " label="설명" rows="3" />
           <v-row>
             <v-col cols="4">
