@@ -3,10 +3,6 @@
     <div class="d-flex align-center mb-4">
       <v-btn icon="mdi-arrow-left" variant="text" @click="$router.push('/vms')" class="mr-2"></v-btn>
       <h1 class="text-h4">VM 상세 정보</h1>
-      <div class="ml-auto">
-        <v-btn color="primary" class="mx-1" @click=" openUpdateDialog ">VM 수정</v-btn>
-        <v-btn color="error" class="mx-1" @click=" vmDelete ">VM 삭제</v-btn>
-      </div>
     </div>
 
     <v-card v-if="vmStore.vmDetailLoading" class="pa-4">

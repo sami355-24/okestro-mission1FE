@@ -48,8 +48,8 @@ const handleVmRefresh = () => {
   vmStore.clearFilters()
 }
 
-const handleEditVm = (vm: Vm) => {
-  vmStore.openUpdateDialog(vm)
+const handleEditVm = async (vm: Vm) => {
+  await vmStore.openUpdateDialog(vm)
 }
 
 const handleDeleteVm = async (vm: Vm) => {

@@ -32,9 +32,6 @@
 
           <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
             label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
-          <v-select v-model=" selectedNetworkIds " :items=" networkList " label="네트워크" multiple chips
-            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId"
-            :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -42,7 +39,7 @@
         <v-btn color="grey" variant="text" @click=" closeDialog ">
           취소
         </v-btn>
-        <v-btn color="primary" @click=" updateVm " :disabled=" !isFormValid ">
+        <v-btn color="primary" @click=" updateVm " :disabled=" isUpdateButtonDisabled ">
           수정
         </v-btn>
       </v-card-actions>
@@ -54,8 +51,7 @@
 import { computed, ref, watch } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
 import { useTagStore } from '@/stores/tagStore'
-import { networkApi, type Network } from '@/api/networkApi'
-import type { Vm, VmDetail } from '@/api/vmApi'
+import type { Vm } from '@/api/vmApi'
 
 interface Props {
   modelValue: boolean
@@ -80,6 +76,8 @@ const dialogVisible = computed({
 
 const isFormValid = ref(false)
 const form = ref()
+const originalVmName = ref('')
+const initialFormData = ref<any>(null)
 
 const updatedVm = ref<{
   name: string
@@ -87,7 +85,6 @@ const updatedVm = ref<{
   vCpu: number
   memory: number
   storage: number
-  networkIds: number[]
   tagIds: string[]
 }>({
   name: '',
@@ -95,13 +92,34 @@ const updatedVm = ref<{
   vCpu: 1,
   memory: 1,
   storage: 20,
-  networkIds: [],
   tagIds: []
 })
 
-const networkList = ref<Network[]>([])
-const selectedNetworkIds = ref<number[]>([])
 const selectedTagIds = ref<string[]>([])
+
+const isNameChanged = computed(() => originalVmName.value !== updatedVm.value.name)
+
+const isFormChanged = computed(() => {
+  if (!initialFormData.value) return false
+
+  const currentFormState = {
+    ...updatedVm.value,
+    tags: [...selectedTagIds.value].sort()
+  }
+  return JSON.stringify(currentFormState) !== JSON.stringify(initialFormData.value)
+})
+
+const isUpdateButtonDisabled = computed(() => {
+  if (!isFormValid.value || !isFormChanged.value) {
+    return true
+  }
+
+  if (isNameChanged.value) {
+    return !vmStore.isNameChecked || vmStore.isNameDuplicate
+  }
+
+  return false
+})
 
 const nameRules = [
   (v: string) => !!v || 'VM 이름은 필수입니다.',
@@ -122,11 +140,8 @@ const updateVm = async () => {
       name: updatedVm.value.name,
       description: updatedVm.value.description,
       vCpu: updatedVm.value.vCpu,
-      memory: updatedVm.value.memory
-    }
-
-    if (selectedNetworkIds.value.length > 0) {
-      updateData.networkIds = selectedNetworkIds.value
+      memory: updatedVm.value.memory,
+      storage: updatedVm.value.storage
     }
 
     if (selectedTagIds.value.length > 0) {
@@ -148,28 +163,10 @@ const closeDialog = () => {
 }
 
 const resetForm = () => {
-  updatedVm.value = {
-    name: '',
-    description: '',
-    vCpu: 1,
-    memory: 1,
-    storage: 20,
-    networkIds: [],
-    tagIds: []
-  }
-  selectedNetworkIds.value = []
+  updatedVm.value = { name: '', description: '', vCpu: 1, memory: 1, storage: 20, tagIds: [] }
   selectedTagIds.value = []
   vmStore.resetNameCheck()
-  form.value?.reset()
-}
-
-const fetchNetworks = async () => {
-  try {
-    const response = await networkApi.fetchNetworks()
-    networkList.value = response.result
-  } catch (error) {
-    console.error('네트워크 목록 조회 실패:', error)
-  }
+  form.value?.resetValidation()
 }
 
 const createTag = async (tags: string[]) => {
@@ -186,59 +183,42 @@ const createTag = async (tags: string[]) => {
   }
 }
 
-// VM 데이터가 변경될 때 폼 초기화
-watch(() => props.vm, async (newVm) => {
-  if (newVm) {
-    // 네트워크 목록을 먼저 가져옴
-    await fetchNetworks()
+watch(dialogVisible, async (isVisible) => {
+  if (!isVisible) {
+    return
+  }
 
-    // vmStore의 vmDetail 정보가 있으면 사용, 없으면 기본값 사용
-    if (vmStore.vmDetail && vmStore.vmDetail.vmId === newVm.vmId) {
-      updatedVm.value = {
-        name: vmStore.vmDetail.vmName,
-        description: vmStore.vmDetail.description || '',
-        vCpu: vmStore.vmDetail.vCpu,
-        memory: vmStore.vmDetail.memory,
-        storage: vmStore.vmDetail.storage,
-        networkIds: [],
-        tagIds: []
-      }
-      // 현재 설정된 네트워크 정보 설정
-      if (vmStore.vmDetail.networks && vmStore.vmDetail.networks.length > 0) {
-        selectedNetworkIds.value = vmStore.vmDetail.networks.map(network => network.networkId)
-        console.log('설정된 네트워크 ID들:', selectedNetworkIds.value)
-        console.log('네트워크 목록:', vmStore.vmDetail.networks)
-      } else {
-        selectedNetworkIds.value = []
-        console.log('네트워크 정보가 없습니다.')
-      }
-    } else {
-      // VM 목록에서 가져온 기본 정보 사용
-      updatedVm.value = {
-        name: newVm.vmName,
-        description: '',
-        vCpu: 1,
-        memory: 1,
-        storage: 20,
-        networkIds: [],
-        tagIds: []
-      }
-      selectedNetworkIds.value = []
-    }
+  const vmDetail = vmStore.vmDetail
+  const currentVm = props.vm
 
-    // VM 목록에서 가져온 태그 정보 사용
-    if (newVm.tags && newVm.tags.length > 0) {
-      const tagIds: string[] = []
-      for (const tagName of newVm.tags) {
-        const tag = tagStore.getTagByName(tagName)
-        if (tag) {
-          tagIds.push(tag.id)
-        }
-      }
-      selectedTagIds.value = tagIds
-    } else {
-      selectedTagIds.value = []
-    }
+  if (!vmDetail || !currentVm || vmDetail.vmId !== currentVm.vmId) {
+    console.error('VM 상세 정보가 준비되지 않았거나, 데이터가 일치하지 않습니다.')
+    alert('데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.')
+    closeDialog()
+    return
+  }
+
+  updatedVm.value = {
+    name: vmDetail.vmName,
+    description: vmDetail.description || '',
+    vCpu: vmDetail.vCpu,
+    memory: vmDetail.memory,
+    storage: vmDetail.storage,
+    tagIds: []
+  }
+
+  if (currentVm.tags && currentVm.tags.length > 0) {
+    selectedTagIds.value = currentVm.tags
+      .map(tagName => tagStore.getTagByName(tagName)?.id)
+      .filter((id): id is string => !!id)
+  } else {
+    selectedTagIds.value = []
+  }
+
+  originalVmName.value = vmDetail.vmName
+  initialFormData.value = {
+    ...updatedVm.value,
+    tags: [...selectedTagIds.value].sort()
   }
 })
 
@@ -246,53 +226,8 @@ watch(() => updatedVm.value.name, () => {
   vmStore.resetNameCheck()
 })
 
-// vmStore의 vmDetail 상태 변경 감지
-watch(() => vmStore.vmDetail, (newVmDetail) => {
-  if (newVmDetail && props.vm && newVmDetail.vmId === props.vm.vmId) {
-    // 폼 전체 업데이트
-    updatedVm.value = {
-      name: newVmDetail.vmName,
-      description: newVmDetail.description || '',
-      vCpu: newVmDetail.vCpu,
-      memory: newVmDetail.memory,
-      storage: newVmDetail.storage,
-      networkIds: [],
-      tagIds: []
-    }
-
-    // 네트워크 정보 업데이트
-    if (newVmDetail.networks && newVmDetail.networks.length > 0) {
-      selectedNetworkIds.value = newVmDetail.networks.map(network => network.networkId)
-      console.log('vmDetail 변경으로 설정된 네트워크 ID들:', selectedNetworkIds.value)
-    } else {
-      selectedNetworkIds.value = []
-    }
-
-    // 태그 정보는 props.vm에서 가져오기
-    if (props.vm && props.vm.tags && props.vm.tags.length > 0) {
-      const tagIds: string[] = []
-      for (const tagName of props.vm.tags) {
-        const tag = tagStore.getTagByName(tagName)
-        if (tag) {
-          tagIds.push(tag.id)
-        }
-      }
-      selectedTagIds.value = tagIds
-    } else {
-      selectedTagIds.value = []
-    }
-  }
-}, { deep: true })
-
-watch(dialogVisible, (newValue) => {
-  if (newValue) {
-    fetchNetworks()
-  }
-})
-
 const handleDialogUpdate = (value: boolean) => {
   if (!value) {
-    // 다이얼로그가 닫힐 때 폼 리셋
     resetForm()
   }
   dialogVisible.value = value

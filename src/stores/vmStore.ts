@@ -57,6 +57,9 @@ export const useVmStore = defineStore('vm', () => {
     vmDetailLoading.value = true
     try {
       const response = await vmApi.fetchVmDetail(vmId)
+      if (!response.result) {
+        throw new Error('API succeeded but returned null result.')
+      }
       vmDetail.value = response.result
       return response.result
     } catch (error) {
@@ -172,20 +175,21 @@ export const useVmStore = defineStore('vm', () => {
     showCreateDialog.value = false
   }
 
-  const openUpdateDialog = (vm: Vm) => {
+  const openUpdateDialog = async (vm: Vm) => {
     selectedVm.value = vm
-    showUpdateDialog.value = true
-    
-    // 백그라운드에서 VM 상세 정보를 가져옴
-    fetchVmDetail(String(vm.vmId)).catch(error => {
-      console.error('VM 상세 정보 조회 실패:', error)
-      // 에러가 발생해도 다이얼로그는 열린 상태 유지
-    })
+    try {
+      await fetchVmDetail(String(vm.vmId))
+      showUpdateDialog.value = true
+    } catch (error) {
+      console.error('VM 상세 정보 조회에 실패하여 다이얼로그를 열 수 없습니다:', error)
+      alert('VM 상세 정보를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   const closeUpdateDialog = () => {
     selectedVm.value = null
     showUpdateDialog.value = false
+    vmDetail.value = null
   }
 
   const resetNameCheck = () => {
