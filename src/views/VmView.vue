@@ -2,9 +2,9 @@
   <div class="ma-4">
     <div class="d-flex justify-space-between align-center mb-4">
       <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; gap: 10px;">
-        <VmFilterOptions :tag-list=" vmStore.tagList " :selected-tags=" vmStore.selectedTags "
+        <VmFilterOptions :tag-list=" tagStore.tagList " :selected-tags=" vmStore.selectedTags "
           :selected-size=" vmStore.selectedSize " @tag-toggle=" vmStore.toggleTag " @size-change=" vmStore.setSize "
-          @refresh-vms=" handleVmRefresh " @refresh-tags=" vmStore.fetchTags " />
+          @refresh-vms=" handleVmRefresh " @refresh-tags=" tagStore.fetchTags " />
         <VmSortOptions :selected-order=" vmStore.selectedOrder " @order-change=" vmStore.setOrder " />
       </div>
       <v-btn color="primary" prepend-icon="mdi-plus" @click=" vmStore.openCreateDialog ">
@@ -16,7 +16,7 @@
       :items-per-page=" vmStore.selectedSize " @page-change=" vmStore.onPageChange " @edit-vm=" handleEditVm "
       @delete-vm=" handleDeleteVm " />
 
-    <VmCreateDialog v-model=" vmStore.showCreateDialog " :tag-list=" vmStore.tagList "
+    <VmCreateDialog v-model=" vmStore.showCreateDialog " :tag-list=" tagStore.tagList "
       @vm-created=" handleVmCreated " />
     <VmUpdate v-model=" vmStore.showUpdateDialog " :vm=" vmStore.selectedVm " @vm-updated=" handleVmUpdated " />
   </div>
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
+import { useTagStore } from '@/stores/tagStore'
 import VmList from '@/components/VmList.vue'
 import VmCreateDialog from '@/components/VmCreateDialog.vue'
 import VmUpdate from '@/components/VmUpdate.vue'
@@ -33,6 +34,7 @@ import VmFilterOptions from '@/components/VmFilterOptions.vue'
 import type { Vm } from '@/api/vmApi'
 
 const vmStore = useVmStore()
+const tagStore = useTagStore()
 
 const handleVmCreated = () => {
   vmStore.fetchVmsWithCurrentParams()

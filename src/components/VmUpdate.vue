@@ -18,11 +18,11 @@
             </v-col>
           </v-row>
 
-          <v-combobox v-model=" selectedTagIds " :items=" vmStore.tagList " item-title="tagName" item-value="id" label="태그"
-            multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
+          <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
+            label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
           <v-select v-model=" selectedNetworkIds " :items=" networkList " label="네트워크" multiple chips
-            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId" :return-object=" false "
-            persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
+            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId"
+            :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -41,6 +41,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
+import { useTagStore } from '@/stores/tagStore'
 import { networkApi, type Network } from '@/api/networkApi'
 import type { Vm, VmDetail } from '@/api/vmApi'
 
@@ -59,6 +60,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const vmStore = useVmStore()
+const tagStore = useTagStore()
 
 const dialogVisible = computed({
   get: () => props.modelValue,
@@ -161,9 +163,9 @@ const fetchNetworks = async () => {
 
 const createTag = async (tags: string[]) => {
   for (const v of tags) {
-    if (!vmStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
+    if (!tagStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
       try {
-        const newTag = await vmStore.createTag(v)
+        const newTag = await tagStore.createTag(v)
         const idx = selectedTagIds.value.findIndex(t => t === v)
         if (idx !== -1) selectedTagIds.value[idx] = newTag.id
       } catch (e) {
@@ -205,7 +207,7 @@ watch(() => props.vm, async (newVm) => {
     if (newVm.tags && newVm.tags.length > 0) {
       const tagIds: string[] = []
       for (const tagName of newVm.tags) {
-        const tag = vmStore.tagList.find(t => t.tagName === tagName)
+        const tag = tagStore.getTagByName(tagName)
         if (tag) {
           tagIds.push(tag.id)
         }

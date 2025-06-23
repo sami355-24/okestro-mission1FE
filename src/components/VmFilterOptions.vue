@@ -1,7 +1,7 @@
 <template>
   <div class="filter-options">
     <span>태그:</span>
-    <v-combobox v-model=" selectedTagsLocal " :items=" vmStore.tagList " item-title="tagName" item-value="id"
+    <v-combobox v-model=" selectedTagsLocal " :items=" tagStore.tagList " item-title="tagName" item-value="id"
       placeholder="태그를 선택하세요" multiple chips small-chips class="tag-combobox mx-2" density="compact" variant="outlined"
       hide-details :return-object=" false " :menu-props=" { maxWidth: '500px' } " :filter=" () => true " hide-no-data
       @keydown.prevent>
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
+import { useTagStore } from '@/stores/tagStore'
 
 interface Props {
   selectedTags: string[]
@@ -48,6 +49,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const vmStore = useVmStore()
+const tagStore = useTagStore()
 const selectedTagsLocal = ref<string[]>([])
 
 watch(() => props.selectedTags, (newTags) => {
@@ -76,13 +78,13 @@ const handleSizeChange = (size: number) => {
 const editTag = async (tagId: string) => {
   const newName = prompt('새로운 태그 이름을 입력하세요')
   if (newName) {
-    const isValid = await vmStore.validateTag(newName)
+    const isValid = await tagStore.validateTag(newName)
     if (!isValid) {
       alert('이미 존재하는 태그입니다.')
       return
     }
-    await vmStore.updateTag(tagId, newName)
-    emit('refresh-vms')
+    await tagStore.updateTag(tagId, newName)
+    vmStore.fetchVmsWithCurrentParams()
     emit('refresh-tags')
   }
 }
@@ -90,8 +92,9 @@ const editTag = async (tagId: string) => {
 const deleteTag = async (tagId: string) => {
   try {
     if (!window.confirm('정말 삭제하시겠습니까?')) return
-    await vmStore.removeTag(tagId)
-    emit('refresh-vms')
+    await tagStore.removeTag(tagId)
+    vmStore.removeSelectedTag(tagId)
+    vmStore.fetchVmsWithCurrentParams()
     emit('refresh-tags')
   } catch (e) {
     console.error('태그 삭제 실패:', e)

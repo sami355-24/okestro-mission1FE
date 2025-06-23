@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { vmApi, type Vm, type VmDetail, type CreateVmRequest, type UpdateVmRequest } from '@/api/vmApi'
-import { getTags, postTag, deleteTag, putTag, validateTagName, type Tag } from '@/api/tagApi'
+import { useTagStore } from './tagStore'
 
 export const useVmStore = defineStore('vm', () => {
-  // VM 관련 상태
+  const tagStore = useTagStore()
+
   const vms = ref<Vm[]>([])
   const vmDetail = ref<VmDetail | null>(null)
   const page = ref(1)
@@ -12,35 +13,26 @@ export const useVmStore = defineStore('vm', () => {
   const loading = ref(false)
   const vmDetailLoading = ref(false)
 
-  // 필터링 및 정렬 상태
   const selectedTags = ref<string[]>([])
   const selectedSize = ref<number>(5)
   const selectedOrder = ref<string>('name-asc')
 
-  // 태그 관련 상태
-  const tagList = ref<Tag[]>([])
-  const tagLoading = ref(false)
-
-  // 다이얼로그 상태
   const showCreateDialog = ref(false)
   const showUpdateDialog = ref(false)
   const selectedVm = ref<Vm | null>(null)
 
-  // VM 이름 중복 확인 상태
   const isNameChecked = ref(false)
   const isNameDuplicate = ref(false)
   const isCheckingName = ref(false)
 
-  // Computed
   const hasSelectedTags = computed(() => selectedTags.value.length > 0)
   const selectedTagNames = computed(() => {
     return selectedTags.value.map(tagId => {
-      const tag = tagList.value.find(t => t.id === tagId)
+      const tag = tagStore.getTagById(tagId)
       return tag?.tagName || tagId
     })
   })
 
-  // VM 관련 액션
   const fetchVms = async (pageNumber: number = 1, tags: string[] | null = null, size: number = 5, orderParam: string = 'name-asc') => {
     loading.value = true
     try {
@@ -129,79 +121,18 @@ export const useVmStore = defineStore('vm', () => {
     }
   }
 
-  // 태그 관련 액션
-  const fetchTags = async () => {
-    tagLoading.value = true
-    try {
-      const tags = await getTags()
-      tagList.value = tags
-      return tags
-    } catch (error) {
-      console.error('태그 목록 조회 실패:', error)
-      throw error
-    } finally {
-      tagLoading.value = false
-    }
-  }
-
-  const createTag = async (name: string) => {
-    try {
-      const newTag = await postTag(name)
-      tagList.value.push(newTag)
-      return newTag
-    } catch (error) {
-      console.error('태그 생성 실패:', error)
-      throw error
-    }
-  }
-
-  const updateTag = async (id: string, name: string) => {
-    try {
-      await putTag(id, name)
-      const tagIndex = tagList.value.findIndex(tag => tag.id === id)
-      if (tagIndex !== -1) {
-        tagList.value[tagIndex].tagName = name
-      }
-    } catch (error) {
-      console.error('태그 수정 실패:', error)
-      throw error
-    }
-  }
-
-  const removeTag = async (id: string) => {
-    try {
-      await deleteTag(id)
-      tagList.value = tagList.value.filter(tag => tag.id !== id)
-      // 선택된 태그에서도 제거
-      selectedTags.value = selectedTags.value.filter(tagId => tagId !== id)
-    } catch (error) {
-      console.error('태그 삭제 실패:', error)
-      throw error
-    }
-  }
-
-  const validateTag = async (name: string) => {
-    try {
-      return await validateTagName(name)
-    } catch (error) {
-      console.error('태그 이름 검증 실패:', error)
-      throw error
-    }
-  }
-
-  // 필터링 및 정렬 액션
   const toggleTag = (tagId: string) => {
     if (selectedTags.value.includes(tagId)) {
       selectedTags.value = selectedTags.value.filter(id => id !== tagId)
     } else {
       selectedTags.value.push(tagId)
     }
-    fetchVmsWithCurrentParams(1) // 태그 변경 시 첫 페이지로
+    fetchVmsWithCurrentParams(1)
   }
 
   const setSize = (size: number) => {
     selectedSize.value = size
-    fetchVmsWithCurrentParams(1) // 크기 변경 시 첫 페이지로
+    fetchVmsWithCurrentParams(1)
   }
 
   const setOrder = (order: string) => {
@@ -214,6 +145,10 @@ export const useVmStore = defineStore('vm', () => {
     selectedSize.value = 5
     selectedOrder.value = 'name-asc'
     fetchVmsWithCurrentParams(1)
+  }
+
+  const removeSelectedTag = (tagId: string) => {
+    selectedTags.value = selectedTags.value.filter(id => id !== tagId)
   }
 
   const fetchVmsWithCurrentParams = (pageNumber = page.value) => {
@@ -229,7 +164,6 @@ export const useVmStore = defineStore('vm', () => {
     fetchVmsWithCurrentParams(newPage)
   }
 
-  // 다이얼로그 액션
   const openCreateDialog = () => {
     showCreateDialog.value = true
   }
@@ -253,16 +187,14 @@ export const useVmStore = defineStore('vm', () => {
     isNameDuplicate.value = false
   }
 
-  // 초기화 액션
   const initialize = async () => {
     await Promise.all([
-      fetchTags(),
+      tagStore.fetchTags(),
       fetchVmsWithCurrentParams()
     ])
   }
 
   return {
-    // 상태
     vms,
     vmDetail,
     page,
@@ -272,8 +204,6 @@ export const useVmStore = defineStore('vm', () => {
     selectedTags,
     selectedSize,
     selectedOrder,
-    tagList,
-    tagLoading,
     showCreateDialog,
     showUpdateDialog,
     selectedVm,
@@ -281,11 +211,9 @@ export const useVmStore = defineStore('vm', () => {
     isNameDuplicate,
     isCheckingName,
 
-    // Computed
     hasSelectedTags,
     selectedTagNames,
 
-    // VM 액션
     fetchVms,
     fetchVmDetail,
     createVm,
@@ -293,29 +221,20 @@ export const useVmStore = defineStore('vm', () => {
     deleteVm,
     checkVmName,
 
-    // 태그 액션
-    fetchTags,
-    createTag,
-    updateTag,
-    removeTag,
-    validateTag,
-
-    // 필터링 액션
     toggleTag,
     setSize,
     setOrder,
     clearFilters,
+    removeSelectedTag,
     fetchVmsWithCurrentParams,
     onPageChange,
 
-    // 다이얼로그 액션
     openCreateDialog,
     closeCreateDialog,
     openUpdateDialog,
     closeUpdateDialog,
     resetNameCheck,
 
-    // 초기화
     initialize
   }
 })
