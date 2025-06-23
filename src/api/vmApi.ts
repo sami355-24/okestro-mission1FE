@@ -1,4 +1,4 @@
-import axios from 'axios'
+import apiClient from '../config/api'
 import type { Network } from './networkApi'
 
 export interface Vm {
@@ -75,64 +75,41 @@ export interface VmDetailResponse {
 
 export const vmApi = {
   featchDetailVm: async (vmId: string): Promise<VmResponse> => {
-    const response = await axios.get<VmResponse>(`http://localhost:8080/vms/${vmId}`, {
-      headers: {
-        memberId: '1'
-      }
-    })
+    const response = await apiClient.get<VmResponse>(`/vms/${vmId}`)
     return response.data
   },
 
   fetchVms: async (params: any): Promise<VmResponse> => {
-    const response = await axios.get<VmResponse>('http://localhost:8080/vms', { params })
+    const response = await apiClient.get<VmResponse>('/vms', { params })
     return response.data
   },
 
   createVm: async (vmData: CreateVmRequest): Promise<any> => {
-    const response = await axios.post('http://localhost:8080/vms', vmData, {
-      headers: {
-        memberId: '1'
-      }
-    })
+    const response = await apiClient.post('/vms', vmData)
     return response.data
   },
 
   checkVmName: async (name: string): Promise<VmNameCheckResponse> => {
-    const response = await axios.get<VmNameCheckResponse>('http://localhost:8080/vms/check', {
+    const response = await apiClient.get<VmNameCheckResponse>('/vms/check', {
       params: {
         'vm-name': name
-      },
-      headers: {
-        memberId: '1'
       }
     })
     return response.data
   },
 
   fetchVmDetail: async (vmId: string): Promise<VmDetailResponse> => {
-    const response = await axios.get<VmDetailResponse>(`http://localhost:8080/vms/${vmId}`, {
-      headers: {
-        memberId: '1'
-      }
-    })
+    const response = await apiClient.get<VmDetailResponse>(`/vms/${vmId}`)
     return response.data
   },
 
   deleteVm: async (vmId: number): Promise<any> => {
-    const response = await axios.delete(`http://localhost:8080/vms/${vmId}`, {
-      headers: {
-        memberId: '1'
-      }
-    })
+    const response = await apiClient.delete(`/vms/${vmId}`)
     return response.data
   },
 
   updateVm: async (vmId: number, vmData: UpdateVmRequest): Promise<any> => {
-    const response = await axios.patch(`http://localhost:8080/vms/${vmId}`, vmData, {
-      headers: {
-        memberId: '1'
-      }
-    })
+    const response = await apiClient.patch(`/vms/${vmId}`, vmData)
     return response.data
   }
 } 

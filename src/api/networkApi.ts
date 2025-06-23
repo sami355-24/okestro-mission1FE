@@ -1,4 +1,4 @@
-import axios from 'axios'
+import apiClient from '../config/api'
 
 export interface Network {
   networkId: number
@@ -16,11 +16,7 @@ export interface NetworkResponse {
 
 export const networkApi = {
   fetchNetworks: async (): Promise<NetworkResponse> => {
-    const response = await axios.get<NetworkResponse>('http://localhost:8080/networks', {
-      headers: {
-        memberId: '1'
-      }
-    })
+    const response = await apiClient.get<NetworkResponse>('/networks')
     return response.data
   }
 } 

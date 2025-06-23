@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
 import type { Client, Frame } from 'stompjs'
+import { API_CONFIG } from '../config/api'
 
 export interface NotificationDto {
   prevVmState: string
@@ -20,7 +21,7 @@ class NotificationService {
   constructor(private readonly memberId: string) {}
 
   connect() {
-    const socket = new SockJS(`http://localhost:8080/noti?memberId=${this.memberId}`)
+    const socket = new SockJS(`${API_CONFIG.BASE_URL}/noti?memberId=${this.memberId}`)
     this.stompClient = Stomp.over(socket)
 
     this.stompClient.connect(
