@@ -1,7 +1,7 @@
 <template>
   <div class="filter-options">
     <span>태그:</span>
-    <v-combobox v-model=" selectedTagsLocal " :items=" tagList " item-title="tagName" item-value="id"
+    <v-combobox v-model=" selectedTagsLocal " :items=" vmStore.tagList " item-title="tagName" item-value="id"
       placeholder="태그를 선택하세요" multiple chips small-chips class="tag-combobox mx-2" density="compact" variant="outlined"
       hide-details :return-object=" false " :menu-props=" { maxWidth: '500px' } " :filter=" () => true " hide-no-data
       @keydown.prevent>
@@ -21,7 +21,7 @@
     </v-combobox>
 
     <span class="mx-2">표시 개수:</span>
-    <v-btn v-for="size in sizeOptions" :key=" size " :color=" selectedSize === size ? 'primary' : 'grey' "
+    <v-btn v-for="size in sizeOptions" :key=" size " :color=" vmStore.selectedSize === size ? 'primary' : 'grey' "
       @click="handleSizeChange(size)" class="ml-1" size="small">
       {{ size }}
     </v-btn>
@@ -30,11 +30,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { Tag } from '@/api/tagApi'
-import { deleteTag as apiDeleteTag, putTag as apiPutTag, validateTagName as apiValidateTagName } from '@/api/tagApi'
+import { useVmStore } from '@/stores/vmStore'
 
 interface Props {
-  tagList: Tag[]
   selectedTags: string[]
   selectedSize: number
 }
@@ -49,7 +47,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-
+const vmStore = useVmStore()
 const selectedTagsLocal = ref<string[]>([])
 
 watch(() => props.selectedTags, (newTags) => {
@@ -78,13 +76,12 @@ const handleSizeChange = (size: number) => {
 const editTag = async (tagId: string) => {
   const newName = prompt('새로운 태그 이름을 입력하세요')
   if (newName) {
-    const isValid = await apiValidateTagName(newName)
-    console.log('isValid', isValid)
+    const isValid = await vmStore.validateTag(newName)
     if (!isValid) {
       alert('이미 존재하는 태그입니다.')
       return
     }
-    await apiPutTag(tagId, newName)
+    await vmStore.updateTag(tagId, newName)
     emit('refresh-vms')
     emit('refresh-tags')
   }
@@ -92,15 +89,14 @@ const editTag = async (tagId: string) => {
 
 const deleteTag = async (tagId: string) => {
   try {
-    if (!window.confirm('정말 삭제하시겠습니까?')) return;
-    await apiDeleteTag(tagId)
+    if (!window.confirm('정말 삭제하시겠습니까?')) return
+    await vmStore.removeTag(tagId)
     emit('refresh-vms')
     emit('refresh-tags')
   } catch (e) {
     console.error('태그 삭제 실패:', e)
   }
 }
-
 </script>
 
 <style scoped>

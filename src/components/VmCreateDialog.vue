@@ -1,42 +1,28 @@
 <template>
-  <v-dialog v-model=" dialogVisible " max-width="500px">
+  <v-dialog v-model=" dialogVisible " max-width="600px">
     <v-card>
-      <v-card-title class="text-h5">
-        VM 생성
-      </v-card-title>
+      <v-card-title>VM 생성</v-card-title>
       <v-card-text>
         <v-form ref="form" v-model=" isFormValid ">
-          <div class="d-flex align-center gap-2">
-            <v-text-field v-model=" newVm.name " label="VM 이름" :rules=" [v => !!v || 'VM 이름을 입력해주세요'] " required
-              :error=" isNameChecked && isNameDuplicate "
-              :error-messages=" isNameChecked && isNameDuplicate ? ['이미 사용 중인 VM 이름입니다'] : [] "
-              :color=" isNameChecked && !isNameDuplicate ? 'success' : undefined "
-              :messages=" isNameChecked && !isNameDuplicate ? ['사용 가능한 VM 이름입니다'] : [] " persistent-hint></v-text-field>
-            <v-btn color="primary" variant="outlined" :disabled=" !newVm.name " @click=" checkVmName "
-              :loading=" isCheckingName ">
-              중복확인
-            </v-btn>
-          </div>
-          <v-text-field v-model=" newVm.description " label="설명"></v-text-field>
+          <v-text-field v-model=" newVm.name " label="VM 이름" required :rules=" nameRules " @blur=" checkVmName " />
+          <v-textarea v-model=" newVm.description " label="설명" rows="3" />
           <v-row>
             <v-col cols="4">
-              <v-text-field v-model.number=" newVm.vCpu " label="vCPU" type="number"
-                :rules=" [v => v > 0 || 'vCPU는 1 이상이어야 합니다'] " required></v-text-field>
+              <v-text-field v-model.number=" newVm.vCpu " label="vCPU" type="number" min="1" required />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" newVm.memory " label="메모리(GB)" type="number"
-                :rules=" [v => v > 0 || '메모리는 1 이상이어야 합니다'] " required></v-text-field>
+              <v-text-field v-model.number=" newVm.memory " label="메모리 (GB)" type="number" min="1" required />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" newVm.storage " label="스토리지(GB)" type="number"
-                :rules=" [v => v > 0 || '스토리지는 1 이상이어야 합니다'] " required></v-text-field>
+              <v-text-field v-model.number=" newVm.storage " label="스토리지 (GB)" type="number" min="20" required />
             </v-col>
           </v-row>
-          <v-combobox v-model=" selectedTagIds " :items=" tagList " item-title="tagName" item-value="id" label="태그"
+
+          <v-combobox v-model=" selectedTagIds " :items=" vmStore.tagList " item-title="tagName" item-value="id" label="태그"
             multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
           <v-select v-model=" selectedNetworkIds " :items=" networkList " label="네트워크" multiple chips
-            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId"
-            :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
+            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId" :return-object=" false "
+            persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -54,13 +40,11 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { vmApi } from '@/api/vmApi'
+import { useVmStore } from '@/stores/vmStore'
 import { networkApi, type Network } from '@/api/networkApi'
-import { getTags, postTag, type Tag } from '@/api/tagApi'
 
 interface Props {
   modelValue: boolean
-  tagList: Tag[]
 }
 
 interface Emits {
@@ -71,6 +55,8 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const vmStore = useVmStore()
+
 const dialogVisible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
@@ -80,9 +66,6 @@ const isFormValid = ref(false)
 const form = ref()
 
 const selectedNetworkIds = ref<string[]>([])
-const isNameChecked = ref(false)
-const isNameDuplicate = ref(false)
-const isCheckingName = ref(false)
 
 const newVm = ref<{
   name: string
@@ -103,23 +86,17 @@ const newVm = ref<{
 })
 
 const networkList = ref<Network[]>([])
-const tagList = ref<Tag[]>([])
-
 const selectedTagIds = ref<string[]>([])
 
+const nameRules = [
+  (v: string) => !!v || 'VM 이름은 필수입니다.',
+  (v: string) => v.length >= 2 || 'VM 이름은 최소 2자 이상이어야 합니다.',
+  (v: string) => !vmStore.isNameDuplicate || '이미 존재하는 VM 이름입니다.'
+]
+
 const checkVmName = async () => {
-  isCheckingName.value = true
-  try {
-    const response = await vmApi.checkVmName(newVm.value.name)
-    isNameChecked.value = true
-    isNameDuplicate.value = response.result.IsDuplicate
-  } catch (error) {
-    console.error('VM 이름 중복 확인 실패:', error)
-    isNameChecked.value = false
-    isNameDuplicate.value = false
-  } finally {
-    isCheckingName.value = false
-  }
+  if (!newVm.value.name) return
+  await vmStore.checkVmName(newVm.value.name)
 }
 
 const createVm = async () => {
@@ -133,7 +110,7 @@ const createVm = async () => {
     }
 
     console.log('Creating VM with:', vmRequest)
-    await vmApi.createVm(vmRequest)
+    await vmStore.createVm(vmRequest)
 
     closeDialog()
     emit('vm-created')
@@ -155,14 +132,12 @@ const closeDialog = () => {
   }
   selectedNetworkIds.value = []
   selectedTagIds.value = []
-  isNameChecked.value = false
-  isNameDuplicate.value = false
+  vmStore.resetNameCheck()
   form.value?.reset()
 }
 
 watch(() => newVm.value.name, () => {
-  isNameChecked.value = false
-  isNameDuplicate.value = false
+  vmStore.resetNameCheck()
 })
 
 const fetchNetworks = async () => {
@@ -174,30 +149,11 @@ const fetchNetworks = async () => {
   }
 }
 
-const fetchTags = async () => {
-  try {
-    const response = await getTags()
-    tagList.value = response
-  } catch (error) {
-    console.error('태그 목록 조회 실패:', error)
-  }
-}
-
-watch(dialogVisible, (newValue) => {
-  if (newValue) {
-    fetchNetworks()
-    fetchTags()
-  } else {
-    closeDialog()
-  }
-})
-
 const createTag = async (tags: string[]) => {
   for (const v of tags) {
-    if (!tagList.value.some(tag => tag.id === v || tag.tagName === v)) {
+    if (!vmStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
       try {
-        const newTag = await postTag(v)
-        tagList.value.push(newTag)
+        const newTag = await vmStore.createTag(v)
         const idx = selectedTagIds.value.findIndex(t => t === v)
         if (idx !== -1) selectedTagIds.value[idx] = newTag.id
       } catch (e) {
@@ -206,4 +162,12 @@ const createTag = async (tags: string[]) => {
     }
   }
 }
+
+watch(dialogVisible, (newValue) => {
+  if (newValue) {
+    fetchNetworks()
+  } else {
+    closeDialog()
+  }
+})
 </script>

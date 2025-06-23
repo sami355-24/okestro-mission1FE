@@ -9,68 +9,50 @@
       </div>
     </div>
 
-    <v-card v-if="loading" class="pa-4">
+    <v-card v-if="vmStore.vmDetailLoading" class="pa-4">
       <v-progress-circular indeterminate color="primary"></v-progress-circular>
       <span class="ml-2">VM 정보를 불러오는 중...</span>
     </v-card>
 
-    <div v-else-if="vmDetail" class="vm-detail-content">
+    <div v-else-if="vmStore.vmDetail" class="vm-detail-content">
       <v-card class="mb-4">
         <v-card-title class="d-flex justify-space-between align-center">
-          <span>{{ vmDetail.vmName }}</span>
+          <span>{{ vmStore.vmDetail.vmName }}</span>
         </v-card-title>
         <v-card-text>
-          <v-row>
-            <v-col cols="12" md="6">
-              <div class="info-item">
-                <span class="info-label">VM ID:</span>
-                <span class="info-value">{{ vmDetail.vmId }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">설명:</span>
-                <span class="info-value">{{ vmDetail.description || '설명 없음' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Private IP:</span>
-                <span class="info-value">{{ vmDetail.privateIp }}</span>
-              </div>
-            </v-col>
-            <v-col cols="12" md="6">
-              <div class="info-item">
-                <span class="info-label">상태:</span>
-                <v-chip :color=" getStatusColor(vmDetail.vmStatus) " size="small">
-                  {{ vmDetail.vmStatus }}
-                </v-chip>
-              </div>
-              <div class="info-item">
-                <span class="info-label">생성일:</span>
-                <span class="info-value">{{ formatDate(vmDetail.createAt) }}</span>
-              </div>
-              <div class="info-item" v-if="vmDetail.updateAt">
-                <span class="info-label">수정일:</span>
-                <span class="info-value">{{ formatDate(vmDetail.updateAt) }}</span>
-              </div>
-            </v-col>
-          </v-row>
+          <div class="info-item">
+            <span class="info-label">상태:</span>
+            <v-chip :color=" getStatusColor(vmStore.vmDetail.vmStatus) " size="small">
+              {{ vmStore.vmDetail.vmStatus }}
+            </v-chip>
+          </div>
+          <div class="info-item">
+            <span class="info-label">설명:</span>
+            <span>{{ vmStore.vmDetail.description || '설명 없음' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Private IP:</span>
+            <span>{{ vmStore.vmDetail.privateIp }}</span>
+          </div>
         </v-card-text>
       </v-card>
 
       <v-row>
         <v-col cols="12" md="6">
           <v-card class="mb-4">
-            <v-card-title>시스템 리소스</v-card-title>
+            <v-card-title>시스템 정보</v-card-title>
             <v-card-text>
               <div class="info-item">
                 <span class="info-label">vCPU:</span>
-                <span class="info-value">{{ vmDetail.vCpu }} 코어</span>
+                <span>{{ vmStore.vmDetail.vCpu }}개</span>
               </div>
               <div class="info-item">
                 <span class="info-label">메모리:</span>
-                <span class="info-value">{{ vmDetail.memory }} GB</span>
+                <span>{{ vmStore.vmDetail.memory }}GB</span>
               </div>
               <div class="info-item">
                 <span class="info-label">스토리지:</span>
-                <span class="info-value">{{ vmDetail.storage }} GB</span>
+                <span>{{ vmStore.vmDetail.storage }}GB</span>
               </div>
             </v-card-text>
           </v-card>
@@ -78,21 +60,22 @@
 
         <v-col cols="12" md="6">
           <v-card class="mb-4">
-            <v-card-title>사용률</v-card-title>
+            <v-card-title>사용량</v-card-title>
             <v-card-text>
-              <div class="usage-item">
-                <span class="usage-label">CPU 사용률:</span>
-                <v-progress-linear :model-value=" vmDetail.cpuUsage " color="primary" height="20" rounded>
-                  <template v-slot:default="{ value }">
-                    <strong>{{ Math.ceil(value) }}%</strong>
+              <div class="info-item">
+                <span class="info-label">CPU 사용률:</span>
+                <v-progress-linear :model-value=" vmStore.vmDetail.cpuUsage " color="primary" height="20" class="mt-1">
+                  <template v-slot:default>
+                    {{ vmStore.vmDetail.cpuUsage }}%
                   </template>
                 </v-progress-linear>
               </div>
-              <div class="usage-item mt-3">
-                <span class="usage-label">메모리 사용률:</span>
-                <v-progress-linear :model-value=" vmDetail.memoryUsage " color="success" height="20" rounded>
-                  <template v-slot:default="{ value }">
-                    <strong>{{ Math.ceil(value) }}%</strong>
+              <div class="info-item">
+                <span class="info-label">메모리 사용률:</span>
+                <v-progress-linear :model-value=" vmStore.vmDetail.memoryUsage " color="success" height="20"
+                  class="mt-1">
+                  <template v-slot:default>
+                    {{ vmStore.vmDetail.memoryUsage }}%
                   </template>
                 </v-progress-linear>
               </div>
@@ -101,10 +84,24 @@
         </v-col>
       </v-row>
 
+      <v-card class="mb-4">
+        <v-card-title>생성/수정 정보</v-card-title>
+        <v-card-text>
+          <div class="info-item">
+            <span class="info-label">생성일:</span>
+            <span>{{ formatDate(vmStore.vmDetail.createAt) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">수정일:</span>
+            <span>{{ formatDate(vmStore.vmDetail.updateAt) }}</span>
+          </div>
+        </v-card-text>
+      </v-card>
+
       <v-card>
         <v-card-title>네트워크 정보</v-card-title>
         <v-card-text>
-          <div v-if="vmDetail.networks.length > 0">
+          <div v-if="vmStore.vmDetail.networks.length > 0">
             <v-table>
               <thead>
                 <tr>
@@ -113,7 +110,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(network, index) in vmDetail.networks" :key=" index ">
+                <tr v-for="(network, index) in vmStore.vmDetail.networks" :key=" index ">
                   <td>{{ network.openIp }}</td>
                   <td>{{ network.openPort }}</td>
                 </tr>
@@ -137,39 +134,23 @@
     </v-card>
 
     <!-- VM 수정 다이얼로그 -->
-    <VmUpdate v-model=" showUpdateDialog " :vm=" currentVm " :vm-detail=" vmDetail " @vm-updated=" handleVmUpdated " />
+    <VmUpdate v-model=" vmStore.showUpdateDialog " :vm=" currentVm " :vm-detail=" vmStore.vmDetail "
+      @vm-updated=" handleVmUpdated " />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
-import type { VmDetail, Vm } from '@/api/vmApi'
-import { vmApi } from '@/api/vmApi'
+import { useVmStore } from '@/stores/vmStore'
+import type { Vm } from '@/api/vmApi'
 import VmUpdate from '@/components/VmUpdate.vue'
 
 const route = useRoute()
 const router = useRouter()
+const vmStore = useVmStore()
 const vmId = computed(() => route.params.vmId as string)
-const vmDetail = ref<VmDetail | null>(null)
-const loading = ref(false)
-const showUpdateDialog = ref(false)
 const currentVm = ref<Vm | null>(null)
-
-const fetchVmDetail = async () => {
-  if (!vmId.value) return
-
-  loading.value = true
-  try {
-    const response = await vmApi.fetchVmDetail(vmId.value)
-    vmDetail.value = response.result
-  } catch (error) {
-    console.error('VM 상세 정보 조회 실패:', error)
-    vmDetail.value = null
-  } finally {
-    loading.value = false
-  }
-}
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -185,22 +166,21 @@ const getStatusColor = (status: string) => {
       return 'warning'
     case 'TERMINATED':
       return 'gray'
-
     default:
       return 'green'
   }
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | null) => {
   if (!dateString) return '정보 없음'
   return new Date(dateString).toLocaleString('ko-KR')
 }
 
 const vmDelete = async () => {
-  if (confirm(`정말로 VM "${ vmDetail.value?.vmName }"을 삭제하시겠습니까?`)) {
+  if (confirm(`정말로 VM "${ vmStore.vmDetail?.vmName }"을 삭제하시겠습니까?`)) {
     try {
-      await vmApi.deleteVm(Number(vmId.value))
-      alert(`VM "${ vmDetail.value?.vmName }"이 성공적으로 삭제되었습니다.`)
+      await vmStore.deleteVm(Number(vmId.value))
+      alert(`VM "${ vmStore.vmDetail?.vmName }"이 성공적으로 삭제되었습니다.`)
       router.push('/vms')
     } catch (error) {
       console.error('VM 삭제 실패:', error)
@@ -210,25 +190,25 @@ const vmDelete = async () => {
 }
 
 const openUpdateDialog = () => {
-  if (vmDetail.value) {
+  if (vmStore.vmDetail) {
     // VmDetail을 Vm 형태로 변환
     currentVm.value = {
-      vmId: vmDetail.value.vmId,
-      vmName: vmDetail.value.vmName,
+      vmId: vmStore.vmDetail.vmId,
+      vmName: vmStore.vmDetail.vmName,
       tags: [], // VmDetail에는 tags가 없으므로 빈 배열
-      privateIp: vmDetail.value.privateIp
+      privateIp: vmStore.vmDetail.privateIp
     }
-    showUpdateDialog.value = true
+    vmStore.openUpdateDialog(currentVm.value)
   }
 }
 
 const handleVmUpdated = () => {
   // VM 수정 후 상세 정보 새로고침
-  fetchVmDetail()
+  vmStore.fetchVmDetail(vmId.value)
 }
 
 onMounted(() => {
-  fetchVmDetail()
+  vmStore.fetchVmDetail(vmId.value)
 })
 </script>
 
@@ -256,24 +236,7 @@ onMounted(() => {
 }
 
 .info-label {
-  font-weight: 600;
-  color: #666;
-  min-width: 120px;
-}
-
-.info-value {
-  color: #333;
-  text-align: right;
-}
-
-.usage-item {
-  margin-bottom: 16px;
-}
-
-.usage-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 500;
   color: #666;
 }
 
