@@ -26,7 +26,7 @@
               <v-text-field v-model.number=" updatedVm.memory " label="메모리 (GB)" type="number" min="1" required />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.storage " label="스토리지 (GB)" type="number" min="20" required />
+              <v-text-field v-model.number=" updatedVm.storage " label="스토리지 (GB)" type="number" :min=" 1 " required />
             </v-col>
           </v-row>
 
@@ -163,7 +163,17 @@ const closeDialog = () => {
 }
 
 const resetForm = () => {
-  updatedVm.value = { name: '', description: '', vCpu: 1, memory: 1, storage: 20, tagIds: [] }
+  // 현재 VM의 storage 값이 있으면 사용하고, 없으면 기본값 20 사용
+  const currentStorage = props.vm ? vmStore.vmDetail?.storage : 20
+
+  updatedVm.value = {
+    name: '',
+    description: '',
+    vCpu: 1,
+    memory: 1,
+    storage: currentStorage || 20,
+    tagIds: []
+  }
   selectedTagIds.value = []
   vmStore.resetNameCheck()
   form.value?.resetValidation()
