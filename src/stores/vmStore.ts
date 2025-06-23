@@ -175,6 +175,12 @@ export const useVmStore = defineStore('vm', () => {
   const openUpdateDialog = (vm: Vm) => {
     selectedVm.value = vm
     showUpdateDialog.value = true
+    
+    // 백그라운드에서 VM 상세 정보를 가져옴
+    fetchVmDetail(String(vm.vmId)).catch(error => {
+      console.error('VM 상세 정보 조회 실패:', error)
+      // 에러가 발생해도 다이얼로그는 열린 상태 유지
+    })
   }
 
   const closeUpdateDialog = () => {

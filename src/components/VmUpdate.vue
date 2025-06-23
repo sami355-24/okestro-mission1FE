@@ -1,5 +1,6 @@
 <template>
-  <v-dialog v-model=" dialogVisible " max-width="600px">
+  <v-dialog v-model=" dialogVisible " max-width="600px" :persistent=" false "
+    @update:model-value=" handleDialogUpdate ">
     <v-card>
       <v-card-title>VM 수정</v-card-title>
       <v-card-text>
@@ -16,7 +17,7 @@
               중복확인
             </v-btn>
           </div>
-          <v-textarea v-model=" updatedVm.description " label="설명" rows="3" />
+          <v-text-field v-model=" updatedVm.description " label="설명" />
           <v-row>
             <v-col cols="4">
               <v-text-field v-model.number=" updatedVm.vCpu " label="vCPU" type="number" min="1" required />
@@ -59,7 +60,6 @@ import type { Vm, VmDetail } from '@/api/vmApi'
 interface Props {
   modelValue: boolean
   vm: Vm | null
-  vmDetail?: VmDetail | null
 }
 
 interface Emits {
@@ -189,20 +189,31 @@ const createTag = async (tags: string[]) => {
 // VM 데이터가 변경될 때 폼 초기화
 watch(() => props.vm, async (newVm) => {
   if (newVm) {
-    // VmDetail 정보가 있으면 사용, 없으면 기본값 사용
-    if (props.vmDetail) {
+    // 네트워크 목록을 먼저 가져옴
+    await fetchNetworks()
+
+    // vmStore의 vmDetail 정보가 있으면 사용, 없으면 기본값 사용
+    if (vmStore.vmDetail && vmStore.vmDetail.vmId === newVm.vmId) {
       updatedVm.value = {
-        name: props.vmDetail.vmName,
-        description: props.vmDetail.description || '',
-        vCpu: props.vmDetail.vCpu,
-        memory: props.vmDetail.memory,
-        storage: props.vmDetail.storage,
+        name: vmStore.vmDetail.vmName,
+        description: vmStore.vmDetail.description || '',
+        vCpu: vmStore.vmDetail.vCpu,
+        memory: vmStore.vmDetail.memory,
+        storage: vmStore.vmDetail.storage,
         networkIds: [],
         tagIds: []
       }
       // 현재 설정된 네트워크 정보 설정
-      selectedNetworkIds.value = props.vmDetail.networks.map(network => network.networkId)
+      if (vmStore.vmDetail.networks && vmStore.vmDetail.networks.length > 0) {
+        selectedNetworkIds.value = vmStore.vmDetail.networks.map(network => network.networkId)
+        console.log('설정된 네트워크 ID들:', selectedNetworkIds.value)
+        console.log('네트워크 목록:', vmStore.vmDetail.networks)
+      } else {
+        selectedNetworkIds.value = []
+        console.log('네트워크 정보가 없습니다.')
+      }
     } else {
+      // VM 목록에서 가져온 기본 정보 사용
       updatedVm.value = {
         name: newVm.vmName,
         description: '',
@@ -212,6 +223,7 @@ watch(() => props.vm, async (newVm) => {
         networkIds: [],
         tagIds: []
       }
+      selectedNetworkIds.value = []
     }
 
     // VM 목록에서 가져온 태그 정보 사용
@@ -234,11 +246,57 @@ watch(() => updatedVm.value.name, () => {
   vmStore.resetNameCheck()
 })
 
+// vmStore의 vmDetail 상태 변경 감지
+watch(() => vmStore.vmDetail, (newVmDetail) => {
+  if (newVmDetail && props.vm && newVmDetail.vmId === props.vm.vmId) {
+    // 폼 전체 업데이트
+    updatedVm.value = {
+      name: newVmDetail.vmName,
+      description: newVmDetail.description || '',
+      vCpu: newVmDetail.vCpu,
+      memory: newVmDetail.memory,
+      storage: newVmDetail.storage,
+      networkIds: [],
+      tagIds: []
+    }
+
+    // 네트워크 정보 업데이트
+    if (newVmDetail.networks && newVmDetail.networks.length > 0) {
+      selectedNetworkIds.value = newVmDetail.networks.map(network => network.networkId)
+      console.log('vmDetail 변경으로 설정된 네트워크 ID들:', selectedNetworkIds.value)
+    } else {
+      selectedNetworkIds.value = []
+    }
+
+    // 태그 정보는 props.vm에서 가져오기
+    if (props.vm && props.vm.tags && props.vm.tags.length > 0) {
+      const tagIds: string[] = []
+      for (const tagName of props.vm.tags) {
+        const tag = tagStore.getTagByName(tagName)
+        if (tag) {
+          tagIds.push(tag.id)
+        }
+      }
+      selectedTagIds.value = tagIds
+    } else {
+      selectedTagIds.value = []
+    }
+  }
+}, { deep: true })
+
 watch(dialogVisible, (newValue) => {
   if (newValue) {
     fetchNetworks()
   }
 })
+
+const handleDialogUpdate = (value: boolean) => {
+  if (!value) {
+    // 다이얼로그가 닫힐 때 폼 리셋
+    resetForm()
+  }
+  dialogVisible.value = value
+}
 </script>
 
 <style scoped></style>
