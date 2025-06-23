@@ -13,7 +13,7 @@
       </template>
 
       <template #item.actions="{ item }">
-        <v-menu>
+        <v-menu v-model=" menuStates[item.vmId] " :close-on-content-click=" false ">
           <template v-slot:activator="{ props }">
             <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind=" props " @click.stop></v-btn>
           </template>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Vm } from '@/api/vmApi'
 
 interface Props {
@@ -61,6 +61,9 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// 각 VM의 메뉴 상태를 관리
+const menuStates = ref<Record<number, boolean>>({})
+
 const headers = [
   { title: 'ID', value: 'vmId' },
   { title: '이름', value: 'vmName' },
@@ -74,15 +77,30 @@ const currentPage = computed({
   set: (value) => emit('page-change', value)
 })
 
+// VM 목록이 변경될 때 메뉴 상태 정리
+watch(() => props.vms, (newVms) => {
+  const currentVmIds = new Set(newVms.map(vm => vm.vmId))
+  const menuVmIds = Object.keys(menuStates.value).map(Number)
+
+  // 삭제된 VM의 메뉴 상태 제거
+  menuVmIds.forEach(vmId => {
+    if (!currentVmIds.has(vmId)) {
+      delete menuStates.value[vmId]
+    }
+  })
+}, { deep: true })
+
 const handlePageChange = (newPage: number) => {
   emit('page-change', newPage)
 }
 
 const editVm = (vm: Vm) => {
+  menuStates.value[vm.vmId] = false // 메뉴 닫기
   emit('edit-vm', vm)
 }
 
 const deleteVm = (vm: Vm) => {
+  menuStates.value[vm.vmId] = false // 메뉴 닫기
   emit('delete-vm', vm)
 }
 </script>
