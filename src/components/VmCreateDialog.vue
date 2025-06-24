@@ -167,9 +167,9 @@ const createTag = async (tags: string[]) => {
   for (const v of tags) {
     if (!tagStore.tagList.some((tag) => tag.id === v || tag.tagName === v)) {
       try {
-        const newTag = await tagStore.createTag(v)
+        const newTagId = await tagStore.createTag(v)
         const idx = selectedTagIds.value.findIndex(t => t === v)
-        if (idx !== -1) selectedTagIds.value[idx] = String(newTag)
+        if (idx !== -1) selectedTagIds.value[idx] = String(newTagId)
       } catch (e) {
         alert('태그 생성 실패')
       }

@@ -8,8 +8,8 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 
-import VmView from './views/VmView.vue'
-import VmDetailView from './views/VmDetailView.vue'
+import VmView from './components/VmView.vue'
+import VmDetailView from './components/VmDetailView.vue'
 import App from './App.vue'
 
 const vuetify = createVuetify({

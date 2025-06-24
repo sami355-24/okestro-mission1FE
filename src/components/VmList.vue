@@ -42,10 +42,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { Vm } from '@/api/vmApi'
+import type { VmListItemResponse } from '@/types/response/vmResponse'
 
 interface Props {
-  vms: Vm[]
+  vms: VmListItemResponse[]
   loading: boolean
   page: number
   totalPages: number
@@ -54,8 +54,8 @@ interface Props {
 
 interface Emits {
   (e: 'page-change', page: number): void
-  (e: 'edit-vm', vm: Vm): void
-  (e: 'delete-vm', vm: Vm): void
+  (e: 'edit-vm', vm: VmListItemResponse): void
+  (e: 'delete-vm', vm: VmListItemResponse): void
 }
 
 const props = defineProps<Props>()
@@ -94,12 +94,12 @@ const handlePageChange = (newPage: number) => {
   emit('page-change', newPage)
 }
 
-const editVm = (vm: Vm) => {
+const editVm = (vm: VmListItemResponse) => {
   menuStates.value[vm.vmId] = false // 메뉴 닫기
   emit('edit-vm', vm)
 }
 
-const deleteVm = (vm: Vm) => {
+const deleteVm = (vm: VmListItemResponse) => {
   menuStates.value[vm.vmId] = false // 메뉴 닫기
   emit('delete-vm', vm)
 }

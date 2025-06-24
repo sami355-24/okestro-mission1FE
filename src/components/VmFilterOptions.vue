@@ -1,7 +1,7 @@
 <template>
   <div class="filter-options">
     <span>태그:</span>
-    <v-combobox v-model=" selectedTagsLocal " :items=" tagStore.tagList " item-title="tagName" item-value="id"
+    <v-combobox v-model=" filterTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
       placeholder="태그를 선택하세요" multiple chips small-chips class="tag-combobox mx-2" density="compact" variant="outlined"
       hide-details :return-object=" false " :menu-props=" { maxWidth: '500px' } " :filter=" () => true " hide-no-data
       @keydown.prevent>
@@ -34,7 +34,7 @@ import { useVmStore } from '@/stores/vmStore'
 import { useTagStore } from '@/stores/tagStore'
 
 interface Props {
-  selectedTags: string[]
+  filterTagIds: string[]
   selectedSize: number
 }
 
@@ -50,15 +50,15 @@ const emit = defineEmits<Emits>()
 
 const vmStore = useVmStore()
 const tagStore = useTagStore()
-const selectedTagsLocal = ref<string[]>([])
+const filterTagIds = ref<string[]>([])
 
-watch(() => props.selectedTags, (newTags) => {
-  selectedTagsLocal.value = [...newTags]
+watch(() => props.filterTagIds, (newTags) => {
+  filterTagIds.value = [...newTags]
 }, { immediate: true })
 
-watch(selectedTagsLocal, (newTags) => {
-  const removedTags = props.selectedTags.filter(tag => !newTags.includes(tag))
-  const addedTags = newTags.filter(tag => !props.selectedTags.includes(tag))
+watch(filterTagIds, (newTags) => {
+  const removedTags = props.filterTagIds.filter(tag => !newTags.includes(tag))
+  const addedTags = newTags.filter(tag => !props.filterTagIds.includes(tag))
 
   removedTags.forEach(tag => {
     emit('tag-toggle', tag)

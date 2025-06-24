@@ -7,7 +7,7 @@ export type VmListResponse = ResponseTemplate<{
   pageContents: VmListItemResponse[]
 }>
 
-interface VmListItemResponse {
+export interface VmListItemResponse {
   vmId: number
   vmName: string
   tags: string[]
@@ -16,7 +16,7 @@ interface VmListItemResponse {
 
 export type VmDetailResponse = ResponseTemplate<VmDetail>
 
-interface VmDetail {
+export interface VmDetail {
   networks: Network[]
   vmId: number
   vmStatus: string

@@ -2,7 +2,7 @@
   <div class="ma-4">
     <div class="d-flex justify-space-between align-center mb-4">
       <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; gap: 10px;">
-        <VmFilterOptions :tag-list=" tagStore.tagList " :selected-tags=" vmStore.selectedTags "
+        <VmFilterOptions :tag-list=" tagStore.tagList " :filterTagIds=" vmStore.selectedTags "
           :selected-size=" vmStore.selectedSize " @tag-toggle=" vmStore.toggleTag " @size-change=" vmStore.setSize "
           @refresh-vms=" handleVmRefresh " @refresh-tags=" tagStore.fetchTags " />
         <VmSortOptions :selected-order=" vmStore.selectedOrder " @order-change=" vmStore.setOrder " />

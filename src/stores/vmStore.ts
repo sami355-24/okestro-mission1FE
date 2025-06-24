@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { vmApi, type Vm, type VmDetail, type CreateVmRequest, type UpdateVmRequest } from '@/api/vmApi'
+import { vmApi } from '@/api/vmApi'
+import type { VmDetailResponse, VmListItemResponse } from '@/types/response/vmResponse'
+import type { CreateVmRequest } from '@/types/request/vmRequest'
+import type { UpdateVmRequest } from '@/types/request/vmRequest'
 import { useTagStore } from './tagStore'
 
 export const useVmStore = defineStore('vm', () => {
   const tagStore = useTagStore()
 
-  const vms = ref<Vm[]>([])
-  const vmDetail = ref<VmDetail | null>(null)
+  const vms = ref<VmListItemResponse[]>([])
+  const vmDetail = ref<VmDetailResponse | null>(null)
   const page = ref(1)
   const totalPages = ref(1)
   const loading = ref(false)
@@ -19,7 +22,7 @@ export const useVmStore = defineStore('vm', () => {
 
   const showCreateDialog = ref(false)
   const showUpdateDialog = ref(false)
-  const selectedVm = ref<Vm | null>(null)
+  const selectedVm = ref<VmDetailResponse | null>(null)
 
   const isNameChecked = ref(false)
   const isNameDuplicate = ref(false)
@@ -60,7 +63,9 @@ export const useVmStore = defineStore('vm', () => {
       if (!response.result) {
         throw new Error('API succeeded but returned null result.')
       }
-      vmDetail.value = response.result
+      if (vmDetail.value) {
+        vmDetail.value.result = response.result
+      }
       return response.result
     } catch (error) {
       console.error('VM 상세 정보 조회 실패:', error)
