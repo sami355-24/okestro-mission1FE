@@ -3,19 +3,13 @@ import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
 import type { Client, Frame } from 'stompjs'
 import { API_CONFIG } from '../config/api'
-
-export interface NotificationDto {
-  prevVmState: string
-  currentVmState: string
-  type: string
-  vmId: number
-}
+import type { NotificationResponse } from '../types/response/notification'
 
 let instance: NotificationService | null = null
 
 class NotificationService {
   private stompClient: Client | null = null
-  private receivedNotifications = ref<NotificationDto[]>([])
+  private receivedNotifications = ref<NotificationResponse[]>([])
   private isWebSocketMessage = ref(false)
 
   constructor(private readonly memberId: string) {}
@@ -37,7 +31,7 @@ class NotificationService {
         this.stompClient!.subscribe('/user/queue/notifications', (notification) => {
           console.log('Received personal notification:', notification.body)
           try {
-            const parsedNotification: NotificationDto = JSON.parse(notification.body)
+            const parsedNotification: NotificationResponse = JSON.parse(notification.body)
             console.log('Parsed notification:', parsedNotification)
             this.isWebSocketMessage.value = true
             this.receivedNotifications.value.push(parsedNotification)

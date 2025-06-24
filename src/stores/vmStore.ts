@@ -107,13 +107,13 @@ export const useVmStore = defineStore('vm', () => {
     }
   }
 
-  const checkVmName = async (name: string) => {
+  const checkVmNameStore = async (name: string) => {
     isCheckingName.value = true
     try {
-      const response = await vmApi.checkVmName(name)
+      const isDuplicate = await vmApi.checkVmNameApi(name)
       isNameChecked.value = true
-      isNameDuplicate.value = response.result.IsDuplicate
-      return response.result.IsDuplicate
+      isNameDuplicate.value = isDuplicate
+      return isDuplicate
     } catch (error) {
       console.error('VM 이름 중복 확인 실패:', error)
       isNameChecked.value = false
@@ -229,7 +229,7 @@ export const useVmStore = defineStore('vm', () => {
     createVm,
     updateVm,
     deleteVm,
-    checkVmName,
+    checkVmName: checkVmNameStore,
 
     toggleTag,
     setSize,

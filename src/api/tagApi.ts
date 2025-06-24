@@ -1,11 +1,7 @@
 import apiClient from '../config/api'
+import type { TagListItemResponse } from '@/types/response/tagResponse'
 
-export interface Tag {
-  id: string
-  tagName: string
-}
-
-export const getTags = async (): Promise<Tag[]> => {
+export const getTags = async (): Promise<TagListItemResponse[]> => {
   const response = await apiClient.get('/tags')
   return response.data.result.map((tag: any) => ({
     id: String(tag.id),
@@ -13,12 +9,9 @@ export const getTags = async (): Promise<Tag[]> => {
   }))
 }
 
-export const postTag = async (name: string): Promise<Tag> => {
-  const response = await apiClient.post(`/tags?name=${encodeURIComponent(name)}`)
-  return {
-    id: String(response.data.result),
-    tagName: name
-  }
+export const postTag = async (name: string): Promise<number> => {
+  const tagIdInResponse = await apiClient.post(`/tags?name=${encodeURIComponent(name)}`)
+  return tagIdInResponse.data.result
 }
 
 export const deleteTag = async (id: string): Promise<void> => {

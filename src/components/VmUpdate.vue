@@ -12,7 +12,7 @@
               :color=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? 'success' : undefined "
               :messages=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? ['사용 가능한 VM 이름입니다'] : [] "
               persistent-hint />
-            <v-btn color="primary" variant="outlined" :disabled=" !updatedVm.name " @click=" checkVmName "
+            <v-btn color="primary" variant="outlined" :disabled=" !updatedVm.name " @click=" checkVmNameComponent "
               :loading=" vmStore.isCheckingName ">
               중복확인
             </v-btn>
@@ -127,7 +127,7 @@ const nameRules = [
   (v: string) => !vmStore.isNameDuplicate || '이미 존재하는 VM 이름입니다.'
 ]
 
-const checkVmName = async () => {
+const checkVmNameComponent = async () => {
   if (!updatedVm.value.name) return
   await vmStore.checkVmName(updatedVm.value.name)
 }

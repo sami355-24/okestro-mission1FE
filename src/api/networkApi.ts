@@ -1,18 +1,8 @@
 import apiClient from '../config/api'
+import type { ResponseTemplate } from '../types/response/template'
+import type { Network } from '../types/response/networkResponse'
 
-export interface Network {
-  networkId: number
-  openIp: string
-  openPort: number
-}
-
-export interface NetworkResponse {
-  metaData: {
-    statusCode: number
-    statusMessage: string
-  }
-  result: Network[]
-}
+export type NetworkResponse = ResponseTemplate<Network[]>
 
 export const networkApi = {
   fetchNetworks: async (): Promise<NetworkResponse> => {

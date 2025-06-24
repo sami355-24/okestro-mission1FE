@@ -1,101 +1,33 @@
 import apiClient from '../config/api'
-import type { Network } from './networkApi'
-
-export interface Vm {
-  vmId: number
-  vmName: string
-  tags: string[]
-  privateIp: string
-}
-
-export interface VmDetail {
-  networks: Network[]
-  vmId: number
-  vmStatus: string
-  description: string
-  vmName: string
-  vCpu: number
-  memory: number
-  cpuUsage: number
-  memoryUsage: number
-  storage: number
-  createAt: string
-  updateAt: string | null
-  privateIp: string
-}
-
-export interface VmResponse {
-  metaData: {
-    statusCode: number
-    statusMessage: string
-  }
-  result: {
-    pageNumber: number
-    totalPages: number
-    pageContents: Vm[]
-  }
-}
-
-export interface CreateVmRequest {
-  name: string
-  description: string
-  vCpu: number
-  memory: number
-  storage: number
-  networkIds: number[]
-  tagIds: string[]
-}
-
-export interface UpdateVmRequest {
-  name: string
-  description: string
-  vCpu: number
-  memory: number
-  networkIds: number[]
-  tagIds: string[]
-}
-
-export interface VmNameCheckResponse {
-  metaData: {
-    statusCode: number
-    statusMessage: string
-  }
-  result: {
-    IsDuplicate: boolean
-  }
-}
-
-export interface VmDetailResponse {
-  metaData: {
-    statusCode: number
-    statusMessage: string
-  }
-  result: VmDetail
-}
+import type {
+  CreateVmRequest,
+  UpdateVmRequest
+} from '../types/request/vmRequest'
+import type { VmListResponse, VmDetailResponse, VmNameCheckResponse } from '../types/response/vmResponse'
 
 export const vmApi = {
-  featchDetailVm: async (vmId: string): Promise<VmResponse> => {
-    const response = await apiClient.get<VmResponse>(`/vms/${vmId}`)
+  featchDetailVm: async (vmId: string): Promise<VmListResponse> => {
+    const response = await apiClient.get<VmListResponse>(`/vms/${vmId}`)
     return response.data
   },
 
-  fetchVms: async (params: any): Promise<VmResponse> => {
-    const response = await apiClient.get<VmResponse>('/vms', { params })
+  fetchVms: async (params: any): Promise<VmListResponse> => {
+    const response = await apiClient.get<VmListResponse>('/vms', { params })
     return response.data
   },
 
-  createVm: async (vmData: CreateVmRequest): Promise<any> => {
+  createVm: async (vmData: CreateVmRequest): Promise<number> => {
     const response = await apiClient.post('/vms', vmData)
-    return response.data
+    return response.data.result
   },
 
-  checkVmName: async (name: string): Promise<VmNameCheckResponse> => {
+  checkVmNameApi: async (name: string): Promise<boolean> => {
     const response = await apiClient.get<VmNameCheckResponse>('/vms/check', {
       params: {
         'vm-name': name
       }
     })
-    return response.data
+    return response.data.result.IsDuplicate
   },
 
   fetchVmDetail: async (vmId: string): Promise<VmDetailResponse> => {

@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getTags, postTag, deleteTag, putTag, validateTagName, type Tag } from '@/api/tagApi'
+import { getTags, postTag, deleteTag, putTag, validateTagName } from '@/api/tagApi'
+import type { TagListItemResponse } from '@/types/response/tagResponse'
 
 export const useTagStore = defineStore('tag', () => {
-  const tagList = ref<Tag[]>([])
+  const tagList = ref<TagListItemResponse[]>([])
   const tagLoading = ref(false)
 
   const fetchTags = async () => {
     tagLoading.value = true
     try {
-      const tags = await getTags()
-      tagList.value = tags
-      return tags
+      const tagsFromApi = await getTags()
+      tagList.value = tagsFromApi
+      return tagList
     } catch (error) {
       console.error('태그 목록 조회 실패:', error)
       throw error
@@ -22,9 +23,12 @@ export const useTagStore = defineStore('tag', () => {
 
   const createTag = async (name: string) => {
     try {
-      const newTag = await postTag(name)
-      tagList.value.push(newTag)
-      return newTag
+      const newTagId = await postTag(name)
+      tagList.value.push({
+        id: String(newTagId),
+        tagName: name
+      })
+      return newTagId
     } catch (error) {
       console.error('태그 생성 실패:', error)
       throw error

@@ -53,7 +53,8 @@
 import { ref, watch, computed } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
 import { useTagStore } from '@/stores/tagStore'
-import { networkApi, type Network } from '@/api/networkApi'
+import { networkApi } from '@/api/networkApi'
+import type { Network } from '@/types/response/networkResponse'
 
 interface Props {
   modelValue: boolean
@@ -164,11 +165,11 @@ const fetchNetworks = async () => {
 
 const createTag = async (tags: string[]) => {
   for (const v of tags) {
-    if (!tagStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
+    if (!tagStore.tagList.some((tag) => tag.id === v || tag.tagName === v)) {
       try {
         const newTag = await tagStore.createTag(v)
         const idx = selectedTagIds.value.findIndex(t => t === v)
-        if (idx !== -1) selectedTagIds.value[idx] = newTag.id
+        if (idx !== -1) selectedTagIds.value[idx] = String(newTag)
       } catch (e) {
         alert('태그 생성 실패')
       }
