@@ -7,12 +7,8 @@
         <v-form ref="form" v-model=" isFormValid ">
           <div class="d-flex align-center gap-2">
             <v-text-field v-model=" updatedVm.name " label="VM 이름" :rules=" nameRules " required
-              :error=" vmStore.isNameChecked && vmStore.isNameDuplicate "
-              :error-messages=" vmStore.isNameChecked && vmStore.isNameDuplicate ? ['이미 사용 중인 VM 이름입니다'] : [] "
-              :color=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? 'success' : undefined "
-              :messages=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? ['사용 가능한 VM 이름입니다'] : [] "
-              persistent-hint />
-            <v-btn color="primary" variant="outlined" :disabled=" !updatedVm.name " @click=" checkVmNameComponent "
+              :color=" nameCheckColor " :messages=" nameCheckMessage ? [nameCheckMessage] : [] " persistent-hint />
+            <v-btn color="primary" variant="outlined" @click=" checkVmNameComponent "
               :loading=" vmStore.isCheckingName ">
               중복확인
             </v-btn>
@@ -20,18 +16,21 @@
           <v-text-field v-model=" updatedVm.description " label="설명" />
           <v-row>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.vCpu " label="vCPU" type="number" min="1" required />
+              <v-text-field v-model.number=" updatedVm.vCpu " label="vCPU" type="number" min="1" required
+                :rules=" numberRules " />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.memory " label="메모리 (GB)" type="number" min="1" required />
+              <v-text-field v-model.number=" updatedVm.memory " label="메모리 (GB)" type="number" min="1" required
+                :rules=" numberRules " />
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.storage " label="스토리지 (GB)" type="number" :min=" 1 " required />
+              <v-text-field v-model.number=" updatedVm.storage " label="스토리지 (GB)" type="number" :min=" 1 " required
+                :rules=" numberRules " />
             </v-col>
           </v-row>
 
           <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
-            label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
+            label="태그" multiple chips clearable :return-object=" false " @update:model-value=" _createTag " />
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -39,7 +38,7 @@
         <v-btn color="grey" variant="text" @click=" closeDialog ">
           취소
         </v-btn>
-        <v-btn color="primary" @click=" updateVm " :disabled=" isUpdateButtonDisabled ">
+        <v-btn color="primary" @click=" updateVm " :disabled=" !isNameValid ">
           수정
         </v-btn>
       </v-card-actions>
@@ -51,11 +50,11 @@
 import { computed, ref, watch } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
 import { useTagStore } from '@/stores/tagStore'
-import type { Vm } from '@/api/vmApi'
+import type { VmDetail } from '@/types/response/vmResponse'
 
 interface Props {
   modelValue: boolean
-  vm: Vm | null
+  vmId: number
 }
 
 interface Emits {
@@ -74,10 +73,14 @@ const dialogVisible = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
+const currentVm = ref<VmDetail | null>(null)
 const isFormValid = ref(false)
 const form = ref()
 const originalVmName = ref('')
-const initialFormData = ref<any>(null)
+const isNameValid = ref(true)
+const nameCheckMessage = ref('')
+const nameCheckColor = ref('')
+
 
 const updatedVm = ref<{
   name: string
@@ -97,43 +100,66 @@ const updatedVm = ref<{
 
 const selectedTagIds = ref<string[]>([])
 
-const isNameChanged = computed(() => originalVmName.value !== updatedVm.value.name)
-
-const isFormChanged = computed(() => {
-  if (!initialFormData.value) return false
-
-  const currentFormState = {
-    ...updatedVm.value,
-    tags: [...selectedTagIds.value].sort()
-  }
-  return JSON.stringify(currentFormState) !== JSON.stringify(initialFormData.value)
-})
-
-const isUpdateButtonDisabled = computed(() => {
-  if (!isFormValid.value || !isFormChanged.value) {
-    return true
-  }
-
-  if (isNameChanged.value) {
-    return !vmStore.isNameChecked || vmStore.isNameDuplicate
-  }
-
-  return false
-})
-
-const nameRules = [
+const nameRules = computed(() => [
   (v: string) => !!v || 'VM 이름은 필수입니다.',
-  (v: string) => v.length >= 2 || 'VM 이름은 최소 2자 이상이어야 합니다.',
-  (v: string) => !vmStore.isNameDuplicate || '이미 존재하는 VM 이름입니다.'
+])
+
+const numberRules = [
+  (v: any) => !isNaN(Number(v)) || '숫자만 입력해주세요',
+  (v: any) => Number(v) >= 1 || '1 이상의 숫자를 입력해주세요'
 ]
+
+
 
 const checkVmNameComponent = async () => {
   if (!updatedVm.value.name) return
-  await vmStore.checkVmName(updatedVm.value.name)
+
+  try {
+    const isDuplicate = await vmStore.isDuplicateVmName(updatedVm.value.name, props.vmId)
+    isNameValid.value = !isDuplicate
+
+    if (isDuplicate) {
+      nameCheckMessage.value = '이미 사용 중인 VM 이름입니다.'
+      nameCheckColor.value = 'error'
+    } else {
+      nameCheckMessage.value = '사용 가능한 VM 이름입니다.'
+      nameCheckColor.value = 'success'
+    }
+  } catch (error) {
+    isNameValid.value = false
+    nameCheckMessage.value = '중복 확인 중 오류가 발생했습니다.'
+    nameCheckColor.value = 'error'
+  }
+}
+
+watch(() => updatedVm.value.name, (newName) => {
+  if (newName !== originalVmName.value) {
+    isNameValid.value = false
+    nameCheckMessage.value = 'VM 이름이 변경되었습니다. 중복 확인을 다시 해주세요.'
+    nameCheckColor.value = 'warning'
+  } else {
+    isNameValid.value = true
+    nameCheckMessage.value = ''
+    nameCheckColor.value = ''
+  }
+})
+
+const _createTag = async (tags: string[]) => {
+  for (const v of tags) {
+    if (!tagStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
+      try {
+        const newTagId = await tagStore.createTag(v)
+        const idx = selectedTagIds.value.findIndex(t => t === v)
+        if (idx !== -1) selectedTagIds.value[idx] = String(newTagId)
+      } catch (e) {
+        alert('태그 생성 실패')
+      }
+    }
+  }
 }
 
 const updateVm = async () => {
-  if (!props.vm) return
+  if (!currentVm.value) return
 
   try {
     const updateData: any = {
@@ -148,7 +174,7 @@ const updateVm = async () => {
       updateData.tagIds = selectedTagIds.value
     }
 
-    await vmStore.updateVm(props.vm.vmId, updateData)
+    await vmStore.updateVm(props.vmId, updateData)
 
     closeDialog()
     emit('vm-updated')
@@ -162,9 +188,54 @@ const closeDialog = () => {
   dialogVisible.value = false
 }
 
+
+watch(dialogVisible, async (isVisible) => {
+  if (!isVisible) {
+    return
+  }
+
+  currentVm.value = await vmStore.fetchVmDetail(String(props.vmId))
+  _setInitialFormData(currentVm.value)
+  isNameValid.value = true
+
+  if (!currentVm.value) {
+    console.error('VM 상세 정보가 준비되지 않았거나, 데이터가 일치하지 않습니다.')
+    alert('데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.')
+    closeDialog()
+    return
+  }
+
+})
+
+const _setInitialFormData = (from: VmDetail) => {
+  originalVmName.value = from.vmName
+  updatedVm.value = {
+    name: from.vmName,
+    description: from.description || '',
+    vCpu: from.vCpu,
+    memory: from.memory,
+    storage: from.storage,
+    tagIds: from.tags.map(tag => String(tag.tagId))
+  }
+
+  if (from.tags && from.tags.length > 0) {
+    selectedTagIds.value = from.tags
+      .map(tag => tagStore.getTagByName(tag.tagName)?.id)
+      .filter((id): id is string => !!id)
+  } else {
+    selectedTagIds.value = []
+  }
+}
+
+const handleDialogUpdate = (value: boolean) => {
+  if (!value) {
+    resetForm()
+  }
+  dialogVisible.value = value
+}
+
 const resetForm = () => {
-  // 현재 VM의 storage 값이 있으면 사용하고, 없으면 기본값 20 사용
-  const currentStorage = props.vm ? vmStore.vmDetail?.storage : 20
+  const currentStorage = currentVm.value ? currentVm.value.storage : 20
 
   updatedVm.value = {
     name: '',
@@ -175,73 +246,13 @@ const resetForm = () => {
     tagIds: []
   }
   selectedTagIds.value = []
-  vmStore.resetNameCheck()
+  isNameValid.value = true
   form.value?.resetValidation()
-}
-
-const createTag = async (tags: string[]) => {
-  for (const v of tags) {
-    if (!tagStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
-      try {
-        const newTag = await tagStore.createTag(v)
-        const idx = selectedTagIds.value.findIndex(t => t === v)
-        if (idx !== -1) selectedTagIds.value[idx] = newTag.id
-      } catch (e) {
-        alert('태그 생성 실패')
-      }
-    }
-  }
-}
-
-watch(dialogVisible, async (isVisible) => {
-  if (!isVisible) {
-    return
-  }
-
-  const vmDetail = vmStore.vmDetail
-  const currentVm = props.vm
-
-  if (!vmDetail || !currentVm || vmDetail.vmId !== currentVm.vmId) {
-    console.error('VM 상세 정보가 준비되지 않았거나, 데이터가 일치하지 않습니다.')
-    alert('데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.')
-    closeDialog()
-    return
-  }
-
-  updatedVm.value = {
-    name: vmDetail.vmName,
-    description: vmDetail.description || '',
-    vCpu: vmDetail.vCpu,
-    memory: vmDetail.memory,
-    storage: vmDetail.storage,
-    tagIds: []
-  }
-
-  if (currentVm.tags && currentVm.tags.length > 0) {
-    selectedTagIds.value = currentVm.tags
-      .map(tagName => tagStore.getTagByName(tagName)?.id)
-      .filter((id): id is string => !!id)
-  } else {
-    selectedTagIds.value = []
-  }
-
-  originalVmName.value = vmDetail.vmName
-  initialFormData.value = {
-    ...updatedVm.value,
-    tags: [...selectedTagIds.value].sort()
-  }
-})
-
-watch(() => updatedVm.value.name, () => {
-  vmStore.resetNameCheck()
-})
-
-const handleDialogUpdate = (value: boolean) => {
-  if (!value) {
-    resetForm()
-  }
-  dialogVisible.value = value
 }
 </script>
 
+<style scoped></style>
+
+
+<style scoped></style>
 <style scoped></style>

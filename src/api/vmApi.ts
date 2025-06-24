@@ -21,10 +21,11 @@ export const vmApi = {
     return response.data.result
   },
 
-  checkVmNameApi: async (name: string): Promise<boolean> => {
+  isDuplicateVmName: async (name: string, vmId: number): Promise<boolean> => {
     const response = await apiClient.get<VmNameCheckResponse>('/vms/check', {
       params: {
-        'vm-name': name
+        'vm-name': name,
+        'vm-id': vmId
       }
     })
     return response.data.result.IsDuplicate

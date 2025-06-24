@@ -30,6 +30,10 @@ export interface VmDetail {
   createAt: string
   updateAt: string | null
   privateIp: string
+  tags: {
+    tagId: number
+    tagName: string
+  }[]
 }
 
 export type VmNameCheckResponse = ResponseTemplate<{

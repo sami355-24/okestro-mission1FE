@@ -1,5 +1,6 @@
 <template>
-  <v-dialog v-model=" dialogVisible " max-width="600px" :persistent=" false " @update:model-value=" handleDialogUpdate ">
+  <v-dialog v-model=" dialogVisible " max-width="600px" :persistent=" false "
+    @update:model-value=" handleDialogUpdate ">
     <v-card>
       <v-card-title>VM 생성</v-card-title>
       <v-card-text>
@@ -29,11 +30,11 @@
             </v-col>
           </v-row>
 
-          <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id" label="태그"
-            multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
+          <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
+            label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
           <v-select v-model=" selectedNetworkIds " :items=" networkList " label="네트워크" multiple chips
-            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId" :return-object=" false "
-            persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
+            :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId"
+            :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -110,7 +111,7 @@ const nameRules = [
 
 const checkVmName = async () => {
   if (!newVm.value.name) return
-  await vmStore.checkVmName(newVm.value.name)
+  await vmStore.isVmNameDuplicate(newVm.value.name)
 }
 
 const createVm = async () => {

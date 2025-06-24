@@ -18,12 +18,12 @@
 
     <VmCreateDialog v-model=" vmStore.showCreateDialog " :tag-list=" tagStore.tagList "
       @vm-created=" handleVmCreated " />
-    <VmUpdate v-model=" vmStore.showUpdateDialog " :vm=" vmStore.selectedVm " @vm-updated=" handleVmUpdated " />
+    <VmUpdate v-model=" vmStore.showUpdateDialog " :vmId=" updateVmId " @vm-updated=" handleVmUpdated " />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
 import { useTagStore } from '@/stores/tagStore'
 import VmList from '@/components/VmList.vue'
@@ -31,7 +31,9 @@ import VmCreateDialog from '@/components/VmCreateDialog.vue'
 import VmUpdate from '@/components/VmUpdate.vue'
 import VmSortOptions from '@/components/VmSortOptions.vue'
 import VmFilterOptions from '@/components/VmFilterOptions.vue'
-import type { Vm } from '@/api/vmApi'
+import type { VmListItemResponse } from '@/types/response/vmResponse'
+
+const updateVmId = ref(0)
 
 const vmStore = useVmStore()
 const tagStore = useTagStore()
@@ -48,11 +50,12 @@ const handleVmRefresh = () => {
   vmStore.clearFilters()
 }
 
-const handleEditVm = async (vm: Vm) => {
-  await vmStore.openUpdateDialog(vm)
+const handleEditVm = async (targetVmId: number) => {
+  vmStore.showUpdateDialog = true
+  updateVmId.value = targetVmId
 }
 
-const handleDeleteVm = async (vm: Vm) => {
+const handleDeleteVm = async (vm: VmListItemResponse) => {
   if (confirm(`정말로 VM "${ vm.vmName }"을 삭제하시겠습니까?`)) {
     try {
       await vmStore.deleteVm(vm.vmId)

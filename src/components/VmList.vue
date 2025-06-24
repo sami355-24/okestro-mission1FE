@@ -54,7 +54,7 @@ interface Props {
 
 interface Emits {
   (e: 'page-change', page: number): void
-  (e: 'edit-vm', vm: VmListItemResponse): void
+  (e: 'edit-vm', vmId: number): void
   (e: 'delete-vm', vm: VmListItemResponse): void
 }
 
@@ -77,12 +77,10 @@ const currentPage = computed({
   set: (value) => emit('page-change', value)
 })
 
-// VM 목록이 변경될 때 메뉴 상태 정리
 watch(() => props.vms, (newVms) => {
   const currentVmIds = new Set(newVms.map(vm => vm.vmId))
   const menuVmIds = Object.keys(menuStates.value).map(Number)
 
-  // 삭제된 VM의 메뉴 상태 제거
   menuVmIds.forEach(vmId => {
     if (!currentVmIds.has(vmId)) {
       delete menuStates.value[vmId]
@@ -95,12 +93,12 @@ const handlePageChange = (newPage: number) => {
 }
 
 const editVm = (vm: VmListItemResponse) => {
-  menuStates.value[vm.vmId] = false // 메뉴 닫기
-  emit('edit-vm', vm)
+  menuStates.value[vm.vmId] = false
+  emit('edit-vm', vm.vmId)
 }
 
 const deleteVm = (vm: VmListItemResponse) => {
-  menuStates.value[vm.vmId] = false // 메뉴 닫기
+  menuStates.value[vm.vmId] = false
   emit('delete-vm', vm)
 }
 </script>

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { vmApi } from '@/api/vmApi'
-import type { VmDetailResponse, VmListItemResponse } from '@/types/response/vmResponse'
+import type { VmDetail, VmDetailResponse, VmListItemResponse } from '@/types/response/vmResponse'
 import type { CreateVmRequest } from '@/types/request/vmRequest'
 import type { UpdateVmRequest } from '@/types/request/vmRequest'
 import { useTagStore } from './tagStore'
@@ -22,7 +22,7 @@ export const useVmStore = defineStore('vm', () => {
 
   const showCreateDialog = ref(false)
   const showUpdateDialog = ref(false)
-  const selectedVm = ref<VmDetailResponse | null>(null)
+  const selectedVm = ref<VmDetail | null>(null)
 
   const isNameChecked = ref(false)
   const isNameDuplicate = ref(false)
@@ -91,7 +91,7 @@ export const useVmStore = defineStore('vm', () => {
     try {
       const response = await vmApi.updateVm(vmId, vmData)
       await fetchVmsWithCurrentParams()
-      if (vmDetail.value?.vmId === vmId) {
+      if (vmDetail.value?.result.vmId === vmId) {
         await fetchVmDetail(String(vmId))
       }
       return response
@@ -112,20 +112,12 @@ export const useVmStore = defineStore('vm', () => {
     }
   }
 
-  const checkVmNameStore = async (name: string) => {
-    isCheckingName.value = true
+  const isDuplicateVmName = async (name: string, vmId: number) => {
     try {
-      const isDuplicate = await vmApi.checkVmNameApi(name)
-      isNameChecked.value = true
-      isNameDuplicate.value = isDuplicate
-      return isDuplicate
+      return await vmApi.isDuplicateVmName(name, vmId)
     } catch (error) {
       console.error('VM 이름 중복 확인 실패:', error)
-      isNameChecked.value = false
-      isNameDuplicate.value = false
       throw error
-    } finally {
-      isCheckingName.value = false
     }
   }
 
@@ -180,7 +172,7 @@ export const useVmStore = defineStore('vm', () => {
     showCreateDialog.value = false
   }
 
-  const openUpdateDialog = async (vm: Vm) => {
+  const openUpdateDialog = async (vm: VmDetail) => {
     selectedVm.value = vm
     try {
       await fetchVmDetail(String(vm.vmId))
@@ -195,11 +187,6 @@ export const useVmStore = defineStore('vm', () => {
     selectedVm.value = null
     showUpdateDialog.value = false
     vmDetail.value = null
-  }
-
-  const resetNameCheck = () => {
-    isNameChecked.value = false
-    isNameDuplicate.value = false
   }
 
   const initialize = async () => {
@@ -234,7 +221,7 @@ export const useVmStore = defineStore('vm', () => {
     createVm,
     updateVm,
     deleteVm,
-    checkVmName: checkVmNameStore,
+    isDuplicateVmName,
 
     toggleTag,
     setSize,
@@ -248,7 +235,6 @@ export const useVmStore = defineStore('vm', () => {
     closeCreateDialog,
     openUpdateDialog,
     closeUpdateDialog,
-    resetNameCheck,
 
     initialize
   }
