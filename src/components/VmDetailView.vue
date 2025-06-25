@@ -3,6 +3,15 @@
     <div class="d-flex align-center mb-4">
       <v-btn icon="mdi-arrow-left" variant="text" @click="$router.push('/vms')" class="mr-2"></v-btn>
       <h1 class="text-h4">VM 상세 정보</h1>
+      <v-spacer></v-spacer>
+      <v-btn color="primary" variant="outlined" @click=" openUpdateDialog " class="mr-2">
+        <v-icon icon="mdi-pencil" class="mr-1"></v-icon>
+        수정
+      </v-btn>
+      <v-btn color="error" variant="outlined" @click=" openDeleteDialog ">
+        <v-icon icon="mdi-delete" class="mr-1"></v-icon>
+        삭제
+      </v-btn>
     </div>
 
     <v-card v-if="vmStore.vmDetailLoading" class="pa-4">
@@ -127,19 +136,46 @@
         VM 목록으로 돌아가기
       </v-btn>
     </v-card>
+
+    <VmUpdate v-model=" showUpdateDialog " :vm-id=" Number(vmId) " @vm-updated=" handleVmUpdated " />
+
+    <v-dialog v-model=" showDeleteDialog " max-width="400px">
+      <v-card>
+        <v-card-title>VM 삭제 확인</v-card-title>
+        <v-card-text>
+          <p>정말로 <strong>{{ currentVm?.vmName }}</strong> VM을 삭제하시겠습니까?</p>          
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey" variant="text" @click="showDeleteDialog = false">
+            취소
+          </v-btn>
+          <v-btn color="error" @click=" deleteVm " :loading=" isDeleting ">
+            삭제
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
 import type { VmDetail } from '@/types/response/vmResponse'
+import VmUpdate from './VmUpdate.vue'
 
 const route = useRoute()
+const router = useRouter()
 const vmStore = useVmStore()
 const vmId = computed(() => route.params.vmId as string)
 const currentVm = ref<VmDetail | null>(null)
+
+// 다이얼로그 상태
+const showUpdateDialog = ref(false)
+const showDeleteDialog = ref(false)
+const isDeleting = ref(false)
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -163,6 +199,36 @@ const getStatusColor = (status: string) => {
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '정보 없음'
   return new Date(dateString).toLocaleString('ko-KR')
+}
+
+const openUpdateDialog = () => {
+  showUpdateDialog.value = true
+}
+
+const openDeleteDialog = () => {
+  showDeleteDialog.value = true
+}
+
+const handleVmUpdated = async () => {
+  // VM 정보 새로고침
+  currentVm.value = await vmStore.fetchVmDetail(vmId.value)
+}
+
+const deleteVm = async () => {
+  if (!currentVm.value) return
+
+  isDeleting.value = true
+  try {
+    await vmStore.deleteVm(currentVm.value.vmId)
+    showDeleteDialog.value = false
+    // VM 목록 페이지로 이동
+    router.push('/vms')
+  } catch (error) {
+    console.error('VM 삭제 실패:', error)
+    alert('VM 삭제에 실패했습니다.')
+  } finally {
+    isDeleting.value = false
+  }
 }
 
 onMounted(async () => {
