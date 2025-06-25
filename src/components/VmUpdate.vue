@@ -1,15 +1,14 @@
 <template>
-  <v-dialog v-model=" dialogVisible " max-width="600px" :persistent=" false "
-    @update:model-value=" handleDialogUpdate ">
+  <v-dialog v-model=" dialogVisible " max-width="600px" :persistent=" false ">
     <v-card>
       <v-card-title>VM 수정</v-card-title>
+      <v-card-subtitle>VM 수정 페이지입니다. 수정하고자 하는 VM 정보를 입력해주세요.</v-card-subtitle>
       <v-card-text>
         <v-form ref="form" v-model=" isFormValid ">
           <div class="d-flex align-center gap-2">
             <v-text-field v-model=" updatedVm.name " label="VM 이름" :rules=" nameRules " required
               :color=" nameCheckColor " :messages=" nameCheckMessage ? [nameCheckMessage] : [] " persistent-hint />
-            <v-btn color="primary" variant="outlined" @click=" checkVmNameComponent "
-              :loading=" vmStore.isCheckingName ">
+            <v-btn color="primary" variant="outlined" @click=" checkVmName " :loading=" vmStore.isCheckingName ">
               중복확인
             </v-btn>
           </div>
@@ -30,7 +29,11 @@
           </v-row>
 
           <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
-            label="태그" multiple chips clearable :return-object=" false " @update:model-value=" _createTag " />
+            label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
+
+          <v-select v-model=" selectedNetworkIds " :items=" networkList " :item-title=" network => `${ network.openIp }:${ network.openPort }` "
+            item-value="id" label="네트워크" multiple chips clearable :return-object=" false " required :rules=" networkRules " />
+
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -51,6 +54,8 @@ import { computed, ref, watch } from 'vue'
 import { useVmStore } from '@/stores/vmStore'
 import { useTagStore } from '@/stores/tagStore'
 import type { VmDetail } from '@/types/response/vmResponse'
+import { networkApi } from '@/api/networkApi'
+import type { Network } from '@/types/response/networkResponse'
 
 interface Props {
   modelValue: boolean
@@ -80,7 +85,7 @@ const originalVmName = ref('')
 const isNameValid = ref(true)
 const nameCheckMessage = ref('')
 const nameCheckColor = ref('')
-
+const networkList = ref<Network[]>()
 
 const updatedVm = ref<{
   name: string
@@ -89,16 +94,19 @@ const updatedVm = ref<{
   memory: number
   storage: number
   tagIds: string[]
+  networkId: string[]
 }>({
   name: '',
   description: '',
-  vCpu: 1,
-  memory: 1,
-  storage: 20,
-  tagIds: []
+  vCpu: 0,
+  memory: 0,
+  storage: 0,
+  tagIds: [],
+  networkId: []
 })
 
 const selectedTagIds = ref<string[]>([])
+const selectedNetworkIds = ref<number[]>([])
 
 const nameRules = computed(() => [
   (v: string) => !!v || 'VM 이름은 필수입니다.',
@@ -109,9 +117,11 @@ const numberRules = [
   (v: any) => Number(v) >= 1 || '1 이상의 숫자를 입력해주세요'
 ]
 
+const networkRules = [
+  (v: any) => v.length > 0 || '네트워크를 하나 이상 선택해주세요'
+]
 
-
-const checkVmNameComponent = async () => {
+const checkVmName = async () => {
   if (!updatedVm.value.name) return
 
   try {
@@ -144,7 +154,7 @@ watch(() => updatedVm.value.name, (newName) => {
   }
 })
 
-const _createTag = async (tags: string[]) => {
+const createTag = async (tags: string[]) => {
   for (const v of tags) {
     if (!tagStore.tagList.some(tag => tag.id === v || tag.tagName === v)) {
       try {
@@ -167,11 +177,15 @@ const updateVm = async () => {
       description: updatedVm.value.description,
       vCpu: updatedVm.value.vCpu,
       memory: updatedVm.value.memory,
-      storage: updatedVm.value.storage
+      storage: updatedVm.value.storage,
     }
 
     if (selectedTagIds.value.length > 0) {
       updateData.tagIds = selectedTagIds.value
+    }
+
+    if (selectedNetworkIds.value.length > 0) {
+      updateData.networkIds = selectedNetworkIds.value
     }
 
     await vmStore.updateVm(props.vmId, updateData)
@@ -184,7 +198,6 @@ const updateVm = async () => {
 }
 
 const closeDialog = () => {
-  resetForm()
   dialogVisible.value = false
 }
 
@@ -195,7 +208,7 @@ watch(dialogVisible, async (isVisible) => {
   }
 
   currentVm.value = await vmStore.fetchVmDetail(String(props.vmId))
-  _setInitialFormData(currentVm.value)
+  await _setInitialFormData(currentVm.value)
   isNameValid.value = true
 
   if (!currentVm.value) {
@@ -207,7 +220,7 @@ watch(dialogVisible, async (isVisible) => {
 
 })
 
-const _setInitialFormData = (from: VmDetail) => {
+const _setInitialFormData = async (from: VmDetail) => {
   originalVmName.value = from.vmName
   updatedVm.value = {
     name: from.vmName,
@@ -215,9 +228,17 @@ const _setInitialFormData = (from: VmDetail) => {
     vCpu: from.vCpu,
     memory: from.memory,
     storage: from.storage,
-    tagIds: from.tags.map(tag => String(tag.tagId))
+    tagIds: from.tags.map(tag => String(tag.tagId)),
+    networkId: from.networks.map(network => String(network.id))
   }
 
+  _setInitialTags(from)
+  _setInitialNetworks(from)
+  _setNetworksList(from)
+  _sortNetworks()
+}
+
+const _setInitialTags = (from: VmDetail) => {
   if (from.tags && from.tags.length > 0) {
     selectedTagIds.value = from.tags
       .map(tag => tagStore.getTagByName(tag.tagName)?.id)
@@ -227,28 +248,62 @@ const _setInitialFormData = (from: VmDetail) => {
   }
 }
 
-const handleDialogUpdate = (value: boolean) => {
-  if (!value) {
-    resetForm()
+const _setInitialNetworks = (from: VmDetail) => {
+  if (from.networks && from.networks.length > 0) {
+    selectedNetworkIds.value = from.networks.map((network: any) => network.networkId || network.id)
+  } else {
+    selectedNetworkIds.value = []
   }
-  dialogVisible.value = value
 }
 
-const resetForm = () => {
-  const currentStorage = currentVm.value ? currentVm.value.storage : 20
+const _setNetworksList = async (from: VmDetail) => {
+  try {
+    networkList.value = (await networkApi.fetchNetworks()).result
 
-  updatedVm.value = {
-    name: '',
-    description: '',
-    vCpu: 1,
-    memory: 1,
-    storage: currentStorage || 20,
-    tagIds: []
+    if (from.networks && from.networks.length > 0) {
+      from.networks.forEach((network: any) => {
+        const exists = networkList.value?.some(n => n.id === network.id)
+        if (!exists) {
+          networkList.value?.push({
+            id: network.id,
+            openIp: network.openIp,
+            openPort: network.openPort
+          })
+        }
+      })
+    }
+
+    networkList.value = networkList.value?.map((network: any) => {
+      if (network.networkId !== undefined) {
+        return {
+          id: network.networkId,
+          openIp: network.openIp,
+          openPort: network.openPort
+        }
+      }
+      return network
+    })
+
+  } catch (error) {
+    console.error('네트워크 목록 조회 실패:', error)
+    networkList.value = []
   }
-  selectedTagIds.value = []
-  isNameValid.value = true
-  form.value?.resetValidation()
 }
+
+const _sortNetworks = () => {
+  networkList.value?.sort((a, b) => {
+    const ipA = a.openIp.split('.').map(num => parseInt(num, 10))
+    const ipB = b.openIp.split('.').map(num => parseInt(num, 10))
+
+    for (let i = 0; i < 4; i++) {
+      if (ipA[i] !== ipB[i]) {
+        return ipA[i] - ipB[i]
+      }
+    }
+    return 0
+  })
+}
+
 </script>
 
 <style scoped></style>

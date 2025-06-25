@@ -1,5 +1,5 @@
 export interface Network {
-  networkId: number
+  id: number
   openIp: string
   openPort: number
 }
