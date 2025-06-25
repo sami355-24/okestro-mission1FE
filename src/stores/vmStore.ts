@@ -112,9 +112,9 @@ export const useVmStore = defineStore('vm', () => {
     }
   }
 
-  const isDuplicateVmName = async (name: string, vmId: number) => {
+  const isDuplicateVmName = async (name: string) => {
     try {
-      return await vmApi.isDuplicateVmName(name, vmId)
+      return await vmApi.isDuplicateVmName(name)
     } catch (error) {
       console.error('VM 이름 중복 확인 실패:', error)
       throw error

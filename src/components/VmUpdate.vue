@@ -6,8 +6,14 @@
       <v-card-text>
         <v-form ref="form" v-model=" isFormValid ">
           <div class="d-flex align-center gap-2">
-            <v-text-field v-model=" updatedVm.name " label="VM 이름" :rules=" nameRules " required
-              :color=" nameCheckColor " :messages=" nameCheckMessage ? [nameCheckMessage] : [] " persistent-hint />
+            <v-text-field v-model=" updatedVm.name " :rules=" nameRules " required :error=" nameCheckColor === 'error' "
+              :error-messages=" nameCheckColor === 'error' ? [nameCheckMessage] : [] "
+              :messages=" nameCheckColor === 'success' ? [nameCheckMessage] : [] "
+              :success=" nameCheckColor === 'success' " persistent-hint>
+              <template #label>
+                VM 이름 <span style="color: red">*</span>
+              </template>
+            </v-text-field>
             <v-btn color="primary" variant="outlined" @click=" checkVmName " :loading=" vmStore.isCheckingName ">
               중복확인
             </v-btn>
@@ -15,24 +21,38 @@
           <v-text-field v-model=" updatedVm.description " label="설명" />
           <v-row>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.vCpu " label="vCPU" type="number" min="1" required
-                :rules=" numberRules " />
+              <v-text-field v-model.number=" updatedVm.vCpu " type="number" min="1" required :rules=" numberRules ">
+                <template #label>
+                  vCPU <span style="color: red">*</span>
+                </template>
+              </v-text-field>
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.memory " label="메모리 (GB)" type="number" min="1" required
-                :rules=" numberRules " />
+              <v-text-field v-model.number=" updatedVm.memory " type="number" min="1" required :rules=" numberRules ">
+                <template #label>
+                  메모리 (GB) <span style="color: red">*</span>
+                </template>
+              </v-text-field>
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" updatedVm.storage " label="스토리지 (GB)" type="number" :min=" 1 " required
-                :rules=" numberRules " />
+              <v-text-field v-model.number=" updatedVm.storage " type="number" min="1" required :rules=" numberRules ">
+                <template #label>
+                  스토리지 (GB) <span style="color: red">*</span>
+                </template>
+              </v-text-field>
             </v-col>
           </v-row>
 
           <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
             label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
 
-          <v-select v-model=" selectedNetworkIds " :items=" networkList " :item-title=" network => `${ network.openIp }:${ network.openPort }` "
-            item-value="id" label="네트워크" multiple chips clearable :return-object=" false " required :rules=" networkRules " />
+          <v-select v-model=" selectedNetworkIds " :items=" networkList " multiple chips
+            :item-title=" network => `${ network.openIp }:${ network.openPort }` " item-value="id"
+            :return-object=" false " required :rules=" networkRules ">
+            <template #label>
+              네트워크 <span style="color: red">*</span>
+            </template>
+          </v-select>
 
         </v-form>
       </v-card-text>
@@ -41,7 +61,8 @@
         <v-btn color="grey" variant="text" @click=" closeDialog ">
           취소
         </v-btn>
-        <v-btn color="primary" @click=" updateVm " :disabled=" !isNameValid ">
+        <v-btn color="primary" @click=" updateVm "
+          :disabled=" !isNameValid || !updatedVm.vCpu || !updatedVm.memory || !updatedVm.storage || selectedNetworkIds.length === 0 ">
           수정
         </v-btn>
       </v-card-actions>
@@ -125,7 +146,7 @@ const checkVmName = async () => {
   if (!updatedVm.value.name) return
 
   try {
-    const isDuplicate = await vmStore.isDuplicateVmName(updatedVm.value.name, props.vmId)
+    const isDuplicate = await vmStore.isDuplicateVmName(updatedVm.value.name)
     isNameValid.value = !isDuplicate
 
     if (isDuplicate) {

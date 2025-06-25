@@ -6,12 +6,14 @@
       <v-card-text>
         <v-form ref="form" v-model=" isFormValid ">
           <div class="d-flex align-center gap-2">
-            <v-text-field v-model=" newVm.name " label="VM 이름" :rules=" nameRules " required
-              :error=" vmStore.isNameChecked && vmStore.isNameDuplicate "
-              :error-messages=" vmStore.isNameChecked && vmStore.isNameDuplicate ? ['이미 사용 중인 VM 이름입니다'] : [] "
-              :color=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? 'success' : undefined "
-              :messages=" vmStore.isNameChecked && !vmStore.isNameDuplicate ? ['사용 가능한 VM 이름입니다'] : [] "
-              persistent-hint />
+            <v-text-field v-model=" newVm.name " :rules=" nameRules " required :error=" nameCheckColor === 'error' "
+              :error-messages=" nameCheckColor === 'error' ? [nameCheckMessage] : [] "
+              :messages=" nameCheckColor === 'success' ? [nameCheckMessage] : [] "
+              :success=" nameCheckColor === 'success' " persistent-hint>
+              <template #label>
+                VM 이름 <span style="color: red">*</span>
+              </template>
+            </v-text-field>
             <v-btn color="primary" variant="outlined" :disabled=" !newVm.name " @click=" checkVmName "
               :loading=" vmStore.isCheckingName ">
               중복확인
@@ -20,21 +22,37 @@
           <v-textarea v-model=" newVm.description " label="설명" rows="3" />
           <v-row>
             <v-col cols="4">
-              <v-text-field v-model.number=" newVm.vCpu " label="vCPU" type="number" min="1" required />
+              <v-text-field v-model.number=" newVm.vCpu " type="number" min="1" required :rules=" numberRules ">
+                <template #label>
+                  vCPU <span style="color: red">*</span>
+                </template>
+              </v-text-field>
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" newVm.memory " label="메모리 (GB)" type="number" min="1" required />
+              <v-text-field v-model.number=" newVm.memory " type="number" min="1" required :rules=" numberRules ">
+                <template #label>
+                  메모리 (GB) <span style="color: red">*</span>
+                </template>
+              </v-text-field>
             </v-col>
             <v-col cols="4">
-              <v-text-field v-model.number=" newVm.storage " label="스토리지 (GB)" type="number" min="20" required />
+              <v-text-field v-model.number=" newVm.storage " type="number" min="20" required :rules=" numberRules ">
+                <template #label>
+                  스토리지 (GB) <span style="color: red">*</span>
+                </template>
+              </v-text-field>
             </v-col>
           </v-row>
 
           <v-combobox v-model=" selectedTagIds " :items=" tagStore.tagList " item-title="tagName" item-value="id"
             label="태그" multiple chips clearable :return-object=" false " @update:model-value=" createTag " />
-          <v-select v-model=" selectedNetworkIds " :items=" networkList " label="네트워크" multiple chips
+          <v-select v-model=" selectedNetworkIds " :items=" networkList " multiple chips
             :item-title=" item => `${ item.openIp }:${ item.openPort }` " item-value="networkId"
-            :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다."></v-select>
+            :return-object=" false " persistent-hint hint="여러 네트워크를 선택할 수 있습니다.">
+            <template #label>
+              네트워크 <span style="color: red">*</span>
+            </template>
+          </v-select>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -42,7 +60,8 @@
         <v-btn color="grey" variant="text" @click=" closeDialog ">
           취소
         </v-btn>
-        <v-btn color="primary" @click=" createVm " :disabled=" !isFormValid ">
+        <v-btn color="primary" @click=" createVm "
+          :disabled=" !isFormValid || nameCheckColor !== 'success' || selectedNetworkIds.length === 0 ">
           생성
         </v-btn>
       </v-card-actions>
@@ -82,6 +101,10 @@ const form = ref()
 
 const selectedNetworkIds = ref<string[]>([])
 
+// 중복 확인 메시지 상태 추가
+const nameCheckMessage = ref('')
+const nameCheckColor = ref('')
+
 const newVm = ref<{
   name: string
   description: string
@@ -109,9 +132,31 @@ const nameRules = [
   (v: string) => !vmStore.isNameDuplicate || '이미 존재하는 VM 이름입니다.'
 ]
 
+const numberRules = [
+  (v: any) => !isNaN(Number(v)) || '숫자만 입력해주세요',
+  (v: any) => Number(v) >= 1 || '1 이상의 숫자를 입력해주세요'
+]
+
 const checkVmName = async () => {
   if (!newVm.value.name) return
-  await vmStore.isVmNameDuplicate(newVm.value.name)
+
+  try {
+    const isDuplicate = await vmStore.isDuplicateVmName(newVm.value.name)
+
+    if (!isDuplicate) {
+      // 200 OK가 오고 중복이 아닌 경우
+      nameCheckMessage.value = '사용 가능한 VM 이름입니다!'
+      nameCheckColor.value = 'success'
+    } else {
+      // 중복인 경우
+      nameCheckMessage.value = '이미 사용 중인 VM 이름입니다.'
+      nameCheckColor.value = 'error'
+    }
+  } catch (error) {
+    console.error('VM 이름 중복 확인 실패:', error)
+    nameCheckMessage.value = '중복 확인 중 오류가 발생했습니다.'
+    nameCheckColor.value = 'error'
+  }
 }
 
 const createVm = async () => {
@@ -147,12 +192,16 @@ const closeDialog = () => {
   }
   selectedNetworkIds.value = []
   selectedTagIds.value = []
-  vmStore.resetNameCheck()
+  vmStore.isNameChecked = false
+  nameCheckMessage.value = ''
+  nameCheckColor.value = ''
   form.value?.reset()
 }
 
 watch(() => newVm.value.name, () => {
-  vmStore.resetNameCheck()
+  vmStore.isNameChecked = false
+  nameCheckMessage.value = ''
+  nameCheckColor.value = ''
 })
 
 const fetchNetworks = async () => {
